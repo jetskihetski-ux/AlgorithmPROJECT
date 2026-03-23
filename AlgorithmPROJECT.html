@@ -1,0 +1,3910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Algorithm Visualiser</title>
+<style>
+
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg0: #0b0f1a;
+  --bg1: #0f1729;
+  --bg2: #141e35;
+  --bg3: #192340;
+  --bg4: #1e2a4a;
+  --border:  #1f2e50;
+  --border2: #27395e;
+  --txt:  #e2eaf8;
+  --txt2: #8da3c4;
+  --txt3: #4a6080;
+  --acc:   #3da9fc;
+  --acc2:  #8b5cf6;
+  --grn:   #10d9a0;
+  --red:   #f0504a;
+  --ylw:   #f6b93b;
+  --org:   #f0803c;
+  --flow:  var(--acc);
+  --aug:   var(--grn);
+  --cut:   var(--red);
+  --res:   var(--acc2);
+  --tort:  var(--acc);
+  --hare:  var(--ylw);
+  --found: var(--grn);
+  --sidebar-w: 220px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+  --glow-acc:  0 0 0 1px rgba(61,169,252,0.25), 0 0 16px rgba(61,169,252,0.08);
+}
+
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg0);
+  color: var(--txt);
+  min-height: 100vh;
+  overflow: hidden;
+  display: flex;
+}
+
+code, .pseudocode, .pc-code, .pc-num,
+input[type="text"], input[type="number"], textarea,
+.stat-val, .step-counter, .explanation, .history-table {
+  font-family: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', monospace;
+}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg1); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--txt3); }
+
+/* ============================================================
+   OUTER SHELL  — sidebar | content
+   ============================================================ */
+#app-shell {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: linear-gradient(180deg, #0d1427 0%, #0b1122 100%);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  flex-shrink: 0;
+  /* subtle grid texture */
+  background-image:
+    linear-gradient(180deg, #0d1427 0%, #0b1122 100%),
+    repeating-linear-gradient(0deg,   transparent, transparent 24px, rgba(255,255,255,0.018) 24px, rgba(255,255,255,0.018) 25px),
+    repeating-linear-gradient(90deg,  transparent, transparent 24px, rgba(255,255,255,0.018) 24px, rgba(255,255,255,0.018) 25px);
+  background-blend-mode: normal;
+}
+
+/* ---- Brand block ---- */
+.sidebar-brand {
+  padding: 22px 18px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 5px;
+}
+
+.brand-diamond {
+  width: 8px;
+  height: 8px;
+  background: var(--acc);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(61,169,252,0.6);
+}
+
+.brand-name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+  letter-spacing: 0.2px;
+  line-height: 1;
+}
+
+.brand-sub {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  color: var(--txt3);
+  line-height: 1.4;
+  padding-left: 17px;
+  letter-spacing: 0.1px;
+}
+
+/* ---- Nav section label ---- */
+.sidebar-section-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--txt3);
+  padding: 18px 18px 8px;
+  flex-shrink: 0;
+}
+
+/* ---- Nav buttons ---- */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--txt2);
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.18s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--txt);
+  border-color: var(--border);
+}
+
+.nav-btn.active {
+  background: rgba(61,169,252,0.12);
+  border-color: rgba(61,169,252,0.3);
+  color: var(--acc);
+  box-shadow: inset 0 1px 0 rgba(61,169,252,0.15);
+}
+
+/* icon circle */
+.nav-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  transition: all 0.18s;
+}
+
+.nav-btn.active .nav-icon {
+  background: rgba(61,169,252,0.15);
+  border-color: rgba(61,169,252,0.3);
+}
+
+.nav-label-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nav-label {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.nav-sublabel {
+  font-size: 9px;
+  color: var(--txt3);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.nav-btn.active .nav-sublabel {
+  color: rgba(61,169,252,0.7);
+}
+
+/* active indicator bar */
+.nav-btn.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 22px;
+  background: var(--acc);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(61,169,252,0.4);
+}
+
+/* ---- Sidebar footer ---- */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 16px 18px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sidebar-footer-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  color: var(--txt3);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   CONTENT AREA  — holds all .part divs
+   ============================================================ */
+#content-area {
+  flex: 1;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================
+   PART VISIBILITY
+   ============================================================ */
+.part { display: none; flex: 1; min-height: 0; }
+.part.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* ============================================================
+   TWO-COLUMN TOOL BODY
+   ============================================================ */
+.tool-body {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ============================================================
+   LEFT PANEL
+   ============================================================ */
+.left-panel {
+  background: var(--bg1);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+/* ---- Panel Section ---- */
+.section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s;
+}
+.section:focus-within { box-shadow: var(--glow-acc); }
+
+.section-header {
+  padding: 9px 13px;
+  background: linear-gradient(90deg, var(--bg3) 0%, rgba(25,35,64,0.6) 100%);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--txt3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.section-header::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--acc);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.section-body { padding: 12px; }
+
+/* ---- Form Elements ---- */
+label {
+  display: block;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--txt3);
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--txt);
+  font-size: 11px;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 3px rgba(61,169,252,0.1);
+}
+textarea { resize: vertical; min-height: 60px; line-height: 1.6; }
+
+/* ---- Preset Buttons ---- */
+.presets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.preset-btn {
+  padding: 7px 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--txt2);
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.18s ease;
+}
+.preset-btn:hover {
+  border-color: rgba(61,169,252,0.4);
+  color: var(--acc);
+  background: rgba(61,169,252,0.07);
+  box-shadow: inset 0 1px 0 rgba(61,169,252,0.1);
+}
+.preset-btn:active { transform: scale(0.98); }
+
+/* ---- Speed Slider ---- */
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.speed-label-txt {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--txt3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border2);
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--acc);
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(61,169,252,0.2), 0 2px 6px rgba(0,0,0,0.4);
+  transition: box-shadow 0.18s;
+}
+input[type="range"]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(61,169,252,0.3), 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.speed-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--acc);
+  min-width: 34px;
+  text-align: right;
+}
+
+/* ---- Playback Buttons ---- */
+.ctrl-row { display: flex; gap: 5px; }
+
+.ctrl-btn {
+  flex: 1;
+  padding: 9px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  color: var(--txt2);
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  transition: all 0.18s ease;
+}
+.ctrl-btn:hover { border-color: rgba(61,169,252,0.4); color: var(--acc); background: rgba(61,169,252,0.07); }
+.ctrl-btn:active { transform: scale(0.97); }
+.ctrl-btn.primary {
+  background: rgba(61,169,252,0.12);
+  border-color: rgba(61,169,252,0.4);
+  color: var(--acc);
+  box-shadow: inset 0 1px 0 rgba(61,169,252,0.15);
+}
+.ctrl-btn.primary:hover {
+  background: rgba(61,169,252,0.18);
+  box-shadow: inset 0 1px 0 rgba(61,169,252,0.2), 0 2px 8px rgba(61,169,252,0.12);
+}
+.ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+/* ---- Status Row ---- */
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0 2px;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.badge-idle    { background: rgba(74,96,128,0.18);  color: var(--txt3);  border: 1px solid rgba(74,96,128,0.2); }
+.badge-ready   { background: rgba(61,169,252,0.12); color: var(--acc);   border: 1px solid rgba(61,169,252,0.25); }
+.badge-playing { background: rgba(16,217,160,0.12); color: var(--grn);   border: 1px solid rgba(16,217,160,0.25); }
+.badge-paused  { background: rgba(246,185,59,0.12); color: var(--ylw);   border: 1px solid rgba(246,185,59,0.25); }
+.badge-done    { background: rgba(139,92,246,0.12); color: var(--acc2);  border: 1px solid rgba(139,92,246,0.25); }
+
+.step-counter {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--txt2);
+}
+
+/* ---- Stats Grid ---- */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+.stat-box {
+  background: var(--bg0);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.stat-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(61,169,252,0.4), transparent);
+}
+.stat-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--acc);
+  display: block;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+}
+.stat-lbl {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--txt3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ---- Pseudocode ---- */
+.pseudocode {
+  background: var(--bg0);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  padding: 8px;
+  font-size: 10.5px;
+  line-height: 1.9;
+  overflow-x: auto;
+  max-height: 210px;
+  overflow-y: auto;
+}
+
+.pc-line {
+  display: flex;
+  gap: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: default;
+  white-space: pre;
+  transition: background 0.15s;
+  position: relative;
+}
+.pc-line:hover { background: rgba(61,169,252,0.06); }
+.pc-line.active {
+  background: rgba(61,169,252,0.14);
+  box-shadow: inset 3px 0 0 var(--acc);
+}
+.pc-num  { color: var(--txt3); min-width: 20px; text-align: right; user-select: none; }
+.pc-code { color: var(--txt2); }
+.pc-line.active .pc-code { color: var(--acc); }
+
+.pc-line[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--txt);
+  white-space: normal;
+  max-width: 210px;
+  z-index: 300;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+  line-height: 1.5;
+}
+
+/* ---- Step Explanation ---- */
+.explanation {
+  background: var(--bg0);
+  border-left: 3px solid var(--acc);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.68;
+  min-height: 50px;
+}
+
+/* ---- History Table ---- */
+.history-wrap {
+  max-height: 150px;
+  overflow-y: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.history-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+.history-table th {
+  background: var(--bg3);
+  padding: 6px 8px;
+  text-align: left;
+  color: var(--txt3);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: sticky;
+  top: 0;
+}
+.history-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(31,46,80,0.6);
+  color: var(--txt2);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.history-table tr:hover td { background: rgba(61,169,252,0.06); color: var(--txt); }
+.history-table tr.current td { background: rgba(61,169,252,0.1); color: var(--acc); }
+
+/* ---- Educational Collapsible ---- */
+.edu-toggle {
+  width: 100%;
+  background: linear-gradient(90deg, var(--bg3) 0%, rgba(25,35,64,0.5) 100%);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 13px;
+  color: var(--txt2);
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.18s;
+}
+.edu-toggle:hover { color: var(--acc); }
+.edu-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+.edu-toggle.open .arrow { transform: rotate(180deg); }
+
+.edu-body {
+  padding: 13px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.75;
+  display: none;
+}
+.edu-body.open { display: block; }
+.edu-body h4 {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--txt);
+  margin: 11px 0 5px;
+  letter-spacing: 0.2px;
+}
+.concept-box {
+  background: rgba(61,169,252,0.06);
+  border-left: 3px solid var(--acc);
+  padding: 8px 11px;
+  margin: 8px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 10.5px;
+  line-height: 1.65;
+}
+
+/* ============================================================
+   RIGHT PANEL
+   ============================================================ */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg0);
+  overflow: hidden;
+}
+
+.viz-header {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(90deg, var(--bg1) 0%, rgba(15,23,41,0.8) 100%);
+  flex-shrink: 0;
+}
+.viz-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+  letter-spacing: 0.2px;
+}
+.legend { display: flex; gap: 14px; margin-left: auto; flex-wrap: wrap; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--txt2);
+}
+.legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+
+.viz-area { flex: 1; position: relative; overflow: hidden; }
+svg.canvas { width: 100%; height: 100%; display: block; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes flow-dash  { to { stroke-dashoffset: -20; } }
+@keyframes pulse-op   { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+@keyframes node-glow  {
+  0%,100% { filter: drop-shadow(0 0 4px currentColor); }
+  50%     { filter: drop-shadow(0 0 14px currentColor); }
+}
+.anim-flow  { animation: flow-dash 0.4s linear infinite; }
+.anim-pulse { animation: pulse-op  1s   ease-in-out infinite; }
+.anim-glow  { animation: node-glow 1.5s ease-in-out infinite; }
+.viz-node { transition: fill 0.2s ease, stroke 0.2s ease, opacity 0.2s ease; }
+.viz-edge { transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease; }
+.viz-label{ transition: fill 0.15s ease, opacity 0.15s ease; }
+
+/* ---- Placeholder ---- */
+.viz-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--txt3);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  user-select: none;
+}
+.viz-placeholder .ph-icon { font-size: 40px; opacity: 0.2; }
+.viz-placeholder .ph-text { text-align: center; line-height: 1.8; opacity: 0.45; }
+.viz-placeholder .ph-arrow { font-size: 20px; opacity: 0.25; animation: pulse-op 2s ease-in-out infinite; }
+
+/* ============================================================
+   RESPONSIVE  (under 980px → collapse sidebar to icon bar)
+   ============================================================ */
+@media (max-width: 980px) {
+  :root { --sidebar-w: 60px; }
+  .brand-name, .brand-sub, .sidebar-section-label,
+  .nav-label-wrap, .sidebar-footer-text { display: none; }
+  .sidebar-brand { padding: 14px 10px; border-bottom: 1px solid var(--border); }
+  .brand-logo { justify-content: center; }
+  .sidebar-nav { padding: 0 6px; }
+  .nav-btn { padding: 10px; justify-content: center; border-radius: var(--radius-sm); }
+  .nav-icon { width: 32px; height: 32px; font-size: 15px; }
+  .tool-body { grid-template-columns: 1fr; }
+  .left-panel  { order: 2; max-height: 50vh; }
+  .right-panel { order: 1; flex: 1; }
+}
+
+
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
+.home-screen {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg0);
+  padding: 48px 60px 60px;
+}
+
+.home-hero {
+  max-width: 820px;
+  margin: 0 auto 52px;
+}
+
+.home-hero-eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--acc);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.home-hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 2px;
+  background: var(--acc);
+  border-radius: 1px;
+}
+
+.home-hero-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--txt);
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+}
+
+.home-hero-title span {
+  color: var(--acc);
+}
+
+.home-hero-sub {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--txt2);
+  line-height: 1.75;
+  max-width: 640px;
+}
+
+/* divider */
+.home-divider {
+  max-width: 820px;
+  margin: 0 auto 36px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+
+/* ---- Algorithm cards ---- */
+.home-cards-label {
+  max-width: 820px;
+  margin: 0 auto 16px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--txt3);
+}
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  max-width: 820px;
+  margin: 0 auto 52px;
+}
+
+.home-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 22px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+/* top accent strip */
+.home-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  transition: opacity 0.2s;
+}
+.home-card:nth-child(1)::before { background: linear-gradient(90deg, #3da9fc, #8b5cf6); }
+.home-card:nth-child(2)::before { background: linear-gradient(90deg, #10d9a0, #3da9fc); }
+.home-card:nth-child(3)::before { background: linear-gradient(90deg, #f6b93b, #f0504a); }
+
+.home-card:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.home-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+}
+.home-card:nth-child(1) .home-card-icon { background: rgba(61,169,252,0.1);  border-color: rgba(61,169,252,0.2); }
+.home-card:nth-child(2) .home-card-icon { background: rgba(16,217,160,0.1);  border-color: rgba(16,217,160,0.2); }
+.home-card:nth-child(3) .home-card-icon { background: rgba(246,185,59,0.1);  border-color: rgba(246,185,59,0.2); }
+
+.home-card-part {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--txt3);
+  margin-bottom: 5px;
+}
+
+.home-card-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.home-card-desc {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+
+.home-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.home-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  color: var(--txt3);
+}
+
+.home-card-cta {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--txt3);
+  transition: color 0.18s;
+}
+.home-card:hover .home-card-cta { color: var(--acc); }
+.home-card-cta-arrow { font-size: 12px; transition: transform 0.18s; }
+.home-card:hover .home-card-cta-arrow { transform: translateX(3px); }
+
+/* ---- References ---- */
+.home-refs-section {
+  max-width: 820px;
+  margin: 0 auto;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.home-refs-header {
+  padding: 14px 22px;
+  background: linear-gradient(90deg, var(--bg3) 0%, rgba(25,35,64,0.5) 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-refs-header-title {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--txt3);
+}
+.home-refs-header::before {
+  content: '';
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--acc2);
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.home-refs-list {
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-ref-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.home-ref-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--acc2);
+  min-width: 20px;
+  padding-top: 1px;
+  flex-shrink: 0;
+}
+
+.home-ref-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.65;
+}
+
+.home-ref-text strong {
+  color: var(--txt);
+  font-weight: 600;
+}
+
+.home-ref-text em {
+  color: var(--txt3);
+  font-style: italic;
+}
+
+.home-refs-footer {
+  padding: 12px 22px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(11,15,26,0.3);
+}
+
+.home-refs-footer-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--txt3);
+  margin-bottom: 6px;
+}
+
+.home-refs-terms {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--acc);
+  line-height: 1.7;
+}
+
+@media (max-width: 980px) {
+  .home-screen { padding: 28px 18px 40px; }
+  .home-cards { grid-template-columns: 1fr; }
+  .home-hero-title { font-size: 24px; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL:  sidebar | content
+     ============================================================ -->
+<div id="app-shell">
+
+<!-- ======================= SIDEBAR ========================= -->
+<nav id="sidebar">
+
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <span class="brand-diamond"></span>
+      <span class="brand-name">Algorithm Visualiser</span>
+    </div>
+    <div class="brand-sub">Interactive visual learning tool<br>for advanced algorithms</div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="sidebar-section-label">Menu</div>
+  <div class="sidebar-nav">
+
+    <button class="nav-btn active" onclick="switchTab(0)">
+      <span class="nav-icon">&#8962;</span>
+      <span class="nav-label-wrap">
+        <span class="nav-label">Home</span>
+        <span class="nav-sublabel">Overview &amp; References</span>
+      </span>
+    </button>
+
+  </div>
+
+  <div class="sidebar-section-label">Visualisations</div>
+  <div class="sidebar-nav">
+
+    <button class="nav-btn" onclick="switchTab(1)">
+      <span class="nav-icon">&#9652;</span>
+      <span class="nav-label-wrap">
+        <span class="nav-label">Network Flow</span>
+        <span class="nav-sublabel">LP Duality &amp; Edmonds-Karp</span>
+      </span>
+    </button>
+
+    <button class="nav-btn" onclick="switchTab(2)">
+      <span class="nav-icon">&#8767;</span>
+      <span class="nav-label-wrap">
+        <span class="nav-label">FFT</span>
+        <span class="nav-sublabel">Polynomial Multiplication</span>
+      </span>
+    </button>
+
+    <button class="nav-btn" onclick="switchTab(3)">
+      <span class="nav-icon">&#961;</span>
+      <span class="nav-label-wrap">
+        <span class="nav-label">Pollard&rsquo;s Rho</span>
+        <span class="nav-sublabel">Integer Factorization</span>
+      </span>
+    </button>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <div class="sidebar-footer-text">
+      CLO 1 &middot; CLO 2 &middot; CLO 3<br>
+      Algorithm Design &amp; Analysis
+    </div>
+  </div>
+
+</nav><!-- /sidebar -->
+
+<!-- ====================== CONTENT AREA ===================== -->
+<div id="content-area">
+
+<!-- ============================================================
+     HOME SCREEN
+     ============================================================ -->
+<div class="part active" id="part-home">
+  <div class="home-screen">
+
+    <!-- Hero -->
+    <div class="home-hero">
+      <div class="home-hero-eyebrow">Algorithm Visualiser</div>
+      <h1 class="home-hero-title">
+        Interactive Visual Learning<br>
+        for <span>Advanced Algorithms</span>
+      </h1>
+      <p class="home-hero-sub">
+        This tool teaches three core algorithms from algorithm design and analysis through
+        step-by-step interactive visualisations. Each tab walks you through how the algorithm
+        works, why it works, and what its theoretical guarantees are — with live animation,
+        pseudocode highlighting, and educational explanations at every step.
+        <br><br>
+        Topics covered: <strong style="color:var(--txt)">LP Duality &amp; Network Flow</strong>,
+        <strong style="color:var(--txt)">FFT Polynomial Multiplication</strong>,
+        and <strong style="color:var(--txt)">Pollard&rsquo;s Rho Factorization</strong>.
+      </p>
+    </div>
+
+    <div class="home-divider"></div>
+
+    <!-- Algorithm cards -->
+    <div class="home-cards-label">Algorithms</div>
+    <div class="home-cards">
+
+      <!-- Card 1 -->
+      <div class="home-card" onclick="switchTab(1)" role="button" tabindex="0">
+        <div class="home-card-icon">&#9652;</div>
+        <div class="home-card-part">Part 1 &mdash; CLO 1</div>
+        <div class="home-card-title">LP Duality &amp; Network Flow</div>
+        <p class="home-card-desc">
+          Visualise the Edmonds-Karp algorithm finding augmenting paths,
+          watch the residual graph update at each step, and see the min-cut
+          highlighted when max-flow is reached. Strong duality is verified live.
+        </p>
+        <div class="home-card-tags">
+          <span class="home-tag">Ford-Fulkerson</span>
+          <span class="home-tag">BFS</span>
+          <span class="home-tag">O(VE²)</span>
+          <span class="home-tag">LP Duality</span>
+        </div>
+        <div class="home-card-cta">
+          Open visualiser <span class="home-card-cta-arrow">&#8594;</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="home-card" onclick="switchTab(2)" role="button" tabindex="0">
+        <div class="home-card-icon">&#8767;</div>
+        <div class="home-card-part">Part 2 &mdash; CLO 2</div>
+        <div class="home-card-title">FFT: Polynomial Multiplication</div>
+        <p class="home-card-desc">
+          Step through the Cooley-Tukey butterfly network level by level.
+          Watch roots of unity animate on the unit circle, see pointwise
+          multiplication, and follow the inverse FFT back to coefficients.
+        </p>
+        <div class="home-card-tags">
+          <span class="home-tag">Butterfly Network</span>
+          <span class="home-tag">O(n log n)</span>
+          <span class="home-tag">Roots of Unity</span>
+        </div>
+        <div class="home-card-cta">
+          Open visualiser <span class="home-card-cta-arrow">&#8594;</span>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="home-card" onclick="switchTab(3)" role="button" tabindex="0">
+        <div class="home-card-icon">&#961;</div>
+        <div class="home-card-part">Part 3 &mdash; CLO 3</div>
+        <div class="home-card-title">Pollard&rsquo;s Rho Factorization</div>
+        <p class="home-card-desc">
+          Animate the pseudo-random sequence forming a rho-shaped graph.
+          Follow the tortoise and hare with Floyd&rsquo;s cycle detection,
+          watching GCD values at each step until a factor is revealed.
+        </p>
+        <div class="home-card-tags">
+          <span class="home-tag">Floyd Detection</span>
+          <span class="home-tag">O(n^¼)</span>
+          <span class="home-tag">Birthday Paradox</span>
+        </div>
+        <div class="home-card-cta">
+          Open visualiser <span class="home-card-cta-arrow">&#8594;</span>
+        </div>
+      </div>
+
+    </div><!-- /home-cards -->
+
+    <!-- References -->
+    <div class="home-refs-section">
+      <div class="home-refs-header">
+        <span class="home-refs-header-title">Academic References</span>
+      </div>
+      <div class="home-refs-list">
+
+        <div class="home-ref-item">
+          <span class="home-ref-num">[1]</span>
+          <span class="home-ref-text">
+            <strong>Cormen, T. H., Leiserson, C. E., Rivest, R. L., and Stein, C.</strong>
+            <em>Introduction to Algorithms, 4th edition.</em>
+            MIT Press, 2022.
+            &mdash; Chapters 26 (Maximum Flow), 29 (Linear Programming), 30 (FFT), 31 (Number Theory).
+          </span>
+        </div>
+
+        <div class="home-ref-item">
+          <span class="home-ref-num">[2]</span>
+          <span class="home-ref-text">
+            <strong>Edmonds, J. and Karp, R. M.</strong>
+            Theoretical improvements in algorithmic efficiency for network flow problems.
+            <em>Journal of the ACM,</em> 19(2):248&ndash;264, 1972.
+            &mdash; Original proof that BFS augmentation gives O(VE²) complexity.
+          </span>
+        </div>
+
+        <div class="home-ref-item">
+          <span class="home-ref-num">[3]</span>
+          <span class="home-ref-text">
+            <strong>Cooley, J. W. and Tukey, J. W.</strong>
+            An algorithm for the machine calculation of complex Fourier series.
+            <em>Mathematics of Computation,</em> 19(90):297&ndash;301, 1965.
+            &mdash; The foundational paper establishing the O(n log n) FFT algorithm.
+          </span>
+        </div>
+
+        <div class="home-ref-item">
+          <span class="home-ref-num">[4]</span>
+          <span class="home-ref-text">
+            <strong>Pollard, J. M.</strong>
+            A Monte Carlo method for factorization.
+            <em>BIT Numerical Mathematics,</em> 15:331&ndash;334, 1975.
+            &mdash; Introduces the rho algorithm achieving O(n^¼) expected factorization.
+          </span>
+        </div>
+
+      </div>
+      <div class="home-refs-footer">
+        <div class="home-refs-footer-label">Suggested Google Scholar search terms</div>
+        <div class="home-refs-terms">
+          Edmonds Karp 1972 &nbsp;&middot;&nbsp;
+          Cooley Tukey 1965 FFT &nbsp;&middot;&nbsp;
+          Pollard 1975 factorization
+        </div>
+      </div>
+    </div><!-- /refs -->
+
+  </div><!-- /home-screen -->
+</div><!-- /part-home -->
+
+
+<!-- ============================================================
+     PART 1 — LP DUALITY & NETWORK FLOW
+     ============================================================ -->
+<div class="part" id="part-0">
+<div class="tool-body">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- 1. Input -->
+    <div class="section">
+      <div class="section-header">Network Input</div>
+      <div class="section-body">
+        <label>Edge list &mdash; format: from, to, capacity (one per line)</label>
+        <textarea id="p1-input" rows="7">s,a,10
+s,b,10
+a,b,2
+a,c,4
+a,d,8
+b,d,9
+c,t,10
+d,t,10</textarea>
+        <small style="font-size:9px;color:var(--txt3)">Use <b>s</b> = source &nbsp;|&nbsp; <b>t</b> = sink</small>
+        <div class="presets">
+          <button class="preset-btn" onclick="p1_preset(0)">Simple 4-node</button>
+          <button class="preset-btn" onclick="p1_preset(1)">Classic CLRS</button>
+          <button class="preset-btn" onclick="p1_preset(2)">Diamond Graph</button>
+          <button class="preset-btn" onclick="p1_preset(3)">Parallel Paths</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Playback Controls -->
+    <div class="section">
+      <div class="section-header">Playback Controls</div>
+      <div class="section-body">
+        <div class="speed-row">
+          <span class="speed-label-txt">SPEED</span>
+          <input type="range" id="p1-speed" min="0.25" max="4" step="0.25" value="1"
+                 oninput="document.getElementById('p1-speed-val').textContent = this.value + 'x'">
+          <span class="speed-val" id="p1-speed-val">1x</span>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn primary" onclick="p1_build()">Build Steps</button>
+          <button class="ctrl-btn"         onclick="p1_step()">Step</button>
+          <button class="ctrl-btn"         onclick="p1_play()">Play</button>
+          <button class="ctrl-btn"         onclick="p1_pause()">Pause</button>
+          <button class="ctrl-btn"         onclick="p1_reset()">Reset</button>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-idle" id="p1-badge">Idle</span>
+          <span class="step-counter"     id="p1-counter">Step 0 / 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Statistics -->
+    <div class="section">
+      <div class="section-header">Live Statistics</div>
+      <div class="section-body">
+        <div class="stats-grid">
+          <div class="stat-box"><span class="stat-val" id="p1-stat-flow">0</span><span class="stat-lbl">Max Flow</span></div>
+          <div class="stat-box"><span class="stat-val" id="p1-stat-aug">0</span><span class="stat-lbl">Augmentations</span></div>
+          <div class="stat-box"><span class="stat-val" id="p1-stat-bfs">0</span><span class="stat-lbl">BFS Calls</span></div>
+          <div class="stat-box"><span class="stat-val" id="p1-stat-cut">—</span><span class="stat-lbl">Min-Cut Cap.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. LP Formulation -->
+    <div class="section">
+      <div class="section-header">LP Formulation &mdash; Strong Duality</div>
+      <div class="section-body" style="font-size:10.5px;color:var(--txt2);line-height:1.85">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <div style="color:var(--grn);font-weight:700;margin-bottom:4px;font-size:10px">PRIMAL (Max-Flow)</div>
+            maximize &nbsp;<span style="color:var(--grn)">&#8721; f(s,v)</span><br>
+            s.t. &ensp; f(u,v) &le; c(u,v)<br>
+            &emsp;&emsp; &#8721;in = &#8721;out<br>
+            &emsp;&emsp; f(u,v) &ge; 0
+          </div>
+          <div>
+            <div style="color:var(--red);font-weight:700;margin-bottom:4px;font-size:10px">DUAL (Min-Cut)</div>
+            minimize &thinsp;<span style="color:var(--red)">&#8721; c(u,v)&middot;d</span><br>
+            s.t. &ensp; d(u,v) &ge; p(v)&minus;p(u)<br>
+            &emsp;&emsp; p(s)=0, p(t)=1<br>
+            &emsp;&emsp; d(u,v) &ge; 0
+          </div>
+        </div>
+        <div class="concept-box" style="margin-top:10px">
+          <strong>Strong Duality:</strong> Max-Flow = Min-Cut<br>
+          <span id="p1-duality-msg" style="color:var(--grn)">Optimal values will match when done.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Pseudocode -->
+    <div class="section">
+      <div class="section-header">Pseudocode &mdash; Edmonds-Karp (BFS)</div>
+      <div class="pseudocode" id="p1-pseudocode">
+        <div class="pc-line" id="p1-pc-0" data-tip="Entry point: graph G, source s, sink t">
+          <span class="pc-num">1</span><span class="pc-code">EDMONDS-KARP(G, s, t):</span>
+        </div>
+        <div class="pc-line" id="p1-pc-1" data-tip="Set zero flow on every edge">
+          <span class="pc-num">2</span><span class="pc-code">  for each (u,v) in E:  f[u,v] = 0</span>
+        </div>
+        <div class="pc-line" id="p1-pc-2" data-tip="BFS finds shortest augmenting path in residual graph">
+          <span class="pc-num">3</span><span class="pc-code">  while BFS(Gf, s to t) finds path p:</span>
+        </div>
+        <div class="pc-line" id="p1-pc-3" data-tip="Bottleneck = minimum residual capacity along p">
+          <span class="pc-num">4</span><span class="pc-code">    cf = min{ cf(u,v) : (u,v) in p }</span>
+        </div>
+        <div class="pc-line" id="p1-pc-4" data-tip="Update each edge on the augmenting path">
+          <span class="pc-num">5</span><span class="pc-code">    for each (u,v) in p:</span>
+        </div>
+        <div class="pc-line" id="p1-pc-5" data-tip="Increase forward flow by bottleneck amount">
+          <span class="pc-num">6</span><span class="pc-code">      f[u,v] = f[u,v] + cf</span>
+        </div>
+        <div class="pc-line" id="p1-pc-6" data-tip="Decrease reverse edge capacity (residual graph update)">
+          <span class="pc-num">7</span><span class="pc-code">      f[v,u] = f[v,u] - cf</span>
+        </div>
+        <div class="pc-line" id="p1-pc-7" data-tip="Total flow leaving source equals max flow value">
+          <span class="pc-num">8</span><span class="pc-code">  return sum_v f[s,v]   // max flow</span>
+        </div>
+        <div class="pc-line" id="p1-pc-8" data-tip="Min-Cut S = nodes reachable from s in final residual graph">
+          <span class="pc-num">9</span><span class="pc-code">  // Min-Cut S = {reachable from s in Gf}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Step Explanation -->
+    <div class="section">
+      <div class="section-header">Step Explanation</div>
+      <div class="explanation" id="p1-explanation">
+        Build a network, then press Play or Step to animate.
+      </div>
+    </div>
+
+    <!-- 7. History Table -->
+    <div class="section">
+      <div class="section-header">Step History</div>
+      <div class="history-wrap">
+        <table class="history-table">
+          <thead>
+            <tr><th>#</th><th>Type</th><th>Path</th><th>Total Flow</th></tr>
+          </thead>
+          <tbody id="p1-history"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. Educational Overview -->
+    <div class="section">
+      <button class="edu-toggle" onclick="toggleEdu(this)">
+        Algorithm Overview &amp; Key Concepts <span class="arrow">&#9660;</span>
+      </button>
+      <div class="edu-body">
+        <h4>What is Max-Flow?</h4>
+        Find the maximum flow from source s to sink t in a directed network
+        where each edge has a capacity constraint.
+        <div class="concept-box">
+          <strong>Ford-Fulkerson Method:</strong> Repeatedly augment flow along paths
+          in the residual graph. <strong>Edmonds-Karp</strong> uses BFS (shortest path)
+          to guarantee O(VE&sup2;) runtime regardless of capacity values.
+        </div>
+        <h4>Residual Graph</h4>
+        For edge (u,v) with capacity c and flow f: the residual graph has a forward
+        edge with capacity c&minus;f and a backward edge with capacity f. The backward
+        edge allows "undoing" previous flow decisions.
+        <div class="concept-box">
+          <strong>Max-Flow Min-Cut Theorem (LP Duality):</strong>
+          Maximum s-t flow = Minimum s-t cut capacity.
+          This follows from LP Strong Duality: max-flow is the primal LP; min-cut is its dual.
+        </div>
+        <h4>Worked Example</h4>
+        Load "Classic CLRS". BFS finds s&rarr;a&rarr;c&rarr;t (bottleneck 4),
+        then s&rarr;a&rarr;d&rarr;t (bottleneck 6), then s&rarr;b&rarr;d&rarr;t (bottleneck 4).
+        Total max flow = 14 = min-cut capacity. &#10003;
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="viz-header">
+      <span class="viz-title">Edmonds-Karp &mdash; Flow Network &amp; Residual Graph</span>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--flow)"></div>Flow Edge</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--aug)"></div>Aug. Path</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--cut)"></div>Min-Cut</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--res)"></div>Residual</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--txt3)"></div>Saturated</div>
+      </div>
+    </div>
+    <div class="viz-area">
+      <div class="viz-placeholder" id="p1-placeholder">
+        <div class="ph-icon">&#9670;</div>
+        <div class="ph-text">
+          Edit the edge list on the left<br>then press <strong style="color:var(--acc)">Build Steps</strong>
+        </div>
+        <div class="ph-arrow">&#8592;</div>
+      </div>
+      <svg id="p1-svg" class="canvas">
+        <defs>
+          <marker id="arr-blue"   markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="var(--flow)"/></marker>
+          <marker id="arr-green"  markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="var(--aug)"/></marker>
+          <marker id="arr-red"    markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="var(--cut)"/></marker>
+          <marker id="arr-gray"   markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="var(--txt3)"/></marker>
+          <marker id="arr-purple" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3z" fill="var(--res)"/></marker>
+        </defs>
+        <g id="p1-graph-layer"></g>
+      </svg>
+    </div>
+  </div>
+
+</div><!-- /tool-body -->
+</div><!-- /part-0 -->
+
+
+<!-- ============================================================
+     PART 2 — FFT: POLYNOMIAL MULTIPLICATION
+     ============================================================ -->
+<div class="part" id="part-1">
+<div class="tool-body">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- 1. Input -->
+    <div class="section">
+      <div class="section-header">Polynomial Input</div>
+      <div class="section-body">
+        <label>Polynomial A &mdash; coefficients a0, a1, a2, ... (low to high degree)</label>
+        <input type="text" id="p2-poly-a" value="1,2,3,4">
+        <small style="font-size:9px;color:var(--txt3)">"1,2,3" represents 1 + 2x + 3x&sup2;</small>
+
+        <label style="margin-top:10px">Polynomial B &mdash; coefficients b0, b1, b2, ...</label>
+        <input type="text" id="p2-poly-b" value="1,1,1,1">
+
+        <div class="presets">
+          <button class="preset-btn" onclick="p2_preset(0)">Simple n=4</button>
+          <button class="preset-btn" onclick="p2_preset(1)">Degree 3x3</button>
+          <button class="preset-btn" onclick="p2_preset(2)">Powers of 2</button>
+          <button class="preset-btn" onclick="p2_preset(3)">Alternating</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Playback Controls -->
+    <div class="section">
+      <div class="section-header">Playback Controls</div>
+      <div class="section-body">
+        <div class="speed-row">
+          <span class="speed-label-txt">SPEED</span>
+          <input type="range" id="p2-speed" min="0.25" max="4" step="0.25" value="1"
+                 oninput="document.getElementById('p2-speed-val').textContent = this.value + 'x'">
+          <span class="speed-val" id="p2-speed-val">1x</span>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn primary" onclick="p2_build()">Build Steps</button>
+          <button class="ctrl-btn"         onclick="p2_step()">Step</button>
+          <button class="ctrl-btn"         onclick="p2_play()">Play</button>
+          <button class="ctrl-btn"         onclick="p2_pause()">Pause</button>
+          <button class="ctrl-btn"         onclick="p2_reset()">Reset</button>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-idle" id="p2-badge">Idle</span>
+          <span class="step-counter"     id="p2-counter">Step 0 / 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Statistics -->
+    <div class="section">
+      <div class="section-header">Live Statistics</div>
+      <div class="section-body">
+        <div class="stats-grid">
+          <div class="stat-box"><span class="stat-val" id="p2-stat-mult">0</span><span class="stat-lbl">Multiplications</span></div>
+          <div class="stat-box"><span class="stat-val" id="p2-stat-adds">0</span><span class="stat-lbl">Additions</span></div>
+          <div class="stat-box"><span class="stat-val" id="p2-stat-naive">—</span><span class="stat-lbl">Naive n&sup2; ops</span></div>
+          <div class="stat-box"><span class="stat-val" id="p2-stat-phase">—</span><span class="stat-lbl">Phase</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Complexity Comparison -->
+    <div class="section">
+      <div class="section-header">Complexity Comparison</div>
+      <div class="section-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="background:var(--bg0);border:1px solid var(--red);border-radius:5px;padding:9px;text-align:center">
+            <div style="color:var(--red);font-weight:700;font-size:9px;letter-spacing:1.5px;margin-bottom:4px">NAIVE O(n&sup2;)</div>
+            <div style="font-size:18px;color:var(--red)" id="p2-naive-ops">— ops</div>
+          </div>
+          <div style="background:var(--bg0);border:1px solid var(--grn);border-radius:5px;padding:9px;text-align:center">
+            <div style="color:var(--grn);font-weight:700;font-size:9px;letter-spacing:1.5px;margin-bottom:4px">FFT O(n log n)</div>
+            <div style="font-size:18px;color:var(--grn)" id="p2-fft-ops">— ops</div>
+          </div>
+        </div>
+        <div class="concept-box">
+          The <strong>n-th roots of unity</strong> w_n^k = e^(2pi*i*k/n) satisfy
+          w_n^(n/2) = -1 (cancellation), halving the work at each recursion level.
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Pseudocode -->
+    <div class="section">
+      <div class="section-header">Pseudocode &mdash; Cooley-Tukey FFT</div>
+      <div class="pseudocode" id="p2-pseudocode">
+        <div class="pc-line" id="p2-pc-0" data-tip="invert=true gives the inverse FFT (IFFT)">
+          <span class="pc-num">1</span><span class="pc-code">FFT(a[0..n-1], invert):</span>
+        </div>
+        <div class="pc-line" id="p2-pc-1" data-tip="Base case: a single value is its own DFT">
+          <span class="pc-num">2</span><span class="pc-code">  if n == 1: return</span>
+        </div>
+        <div class="pc-line" id="p2-pc-2" data-tip="Split by even/odd index — Divide step">
+          <span class="pc-num">3</span><span class="pc-code">  a_even = a[0,2,4,...];  a_odd = a[1,3,5,...]</span>
+        </div>
+        <div class="pc-line" id="p2-pc-3" data-tip="Conquer: recursive FFT on each half">
+          <span class="pc-num">4</span><span class="pc-code">  FFT(a_even, invert);  FFT(a_odd, invert)</span>
+        </div>
+        <div class="pc-line" id="p2-pc-4" data-tip="Principal n-th root of unity; conjugate for IFFT">
+          <span class="pc-num">5</span><span class="pc-code">  w = e^(+/-2*pi*i/n)   [- sign for IFFT]</span>
+        </div>
+        <div class="pc-line" id="p2-pc-5" data-tip="Butterfly loop over lower half of the current block">
+          <span class="pc-num">6</span><span class="pc-code">  for k = 0 to n/2 - 1:</span>
+        </div>
+        <div class="pc-line" id="p2-pc-6" data-tip="Twiddle factor: rotate a_odd[k] by w^k">
+          <span class="pc-num">7</span><span class="pc-code">    t = w^k * a_odd[k]</span>
+        </div>
+        <div class="pc-line" id="p2-pc-7" data-tip="Upper butterfly output: sum of even and twiddle">
+          <span class="pc-num">8</span><span class="pc-code">    a[k]     = a_even[k] + t</span>
+        </div>
+        <div class="pc-line" id="p2-pc-8" data-tip="Lower butterfly output: difference (cancellation property)">
+          <span class="pc-num">9</span><span class="pc-code">    a[k+n/2] = a_even[k] - t</span>
+        </div>
+        <div class="pc-line" id="p2-pc-9" data-tip="Normalize all coefficients after inverse FFT">
+          <span class="pc-num">10</span><span class="pc-code">  if invert: a[k] = a[k] / n</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Step Explanation -->
+    <div class="section">
+      <div class="section-header">Step Explanation</div>
+      <div class="explanation" id="p2-explanation">
+        Enter two polynomials and press Build to begin.
+      </div>
+    </div>
+
+    <!-- 7. History Table -->
+    <div class="section">
+      <div class="section-header">Step History</div>
+      <div class="history-wrap">
+        <table class="history-table">
+          <thead>
+            <tr><th>#</th><th>Phase</th><th>Detail</th><th>Total Ops</th></tr>
+          </thead>
+          <tbody id="p2-history"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. Educational Overview -->
+    <div class="section">
+      <button class="edu-toggle" onclick="toggleEdu(this)">
+        Algorithm Overview &amp; Key Concepts <span class="arrow">&#9660;</span>
+      </button>
+      <div class="edu-body">
+        <h4>Why FFT for Polynomials?</h4>
+        Naive multiplication of degree-n polynomials costs O(n&sup2;). FFT evaluates each polynomial
+        at n cleverly chosen points in O(n log n), multiplies pointwise in O(n), then interpolates back.
+        <div class="concept-box">
+          <strong>3-Step Process:</strong><br>
+          (1) FFT(A) and FFT(B) &rarr; value representation at n roots of unity<br>
+          (2) Pointwise: C[k] = A[k] &middot; B[k] &mdash; O(n)<br>
+          (3) IFFT(C) &rarr; coefficient form of the product
+        </div>
+        <h4>Butterfly Network</h4>
+        At each recursion level, n/2 butterfly operations combine adjacent pairs.
+        With log&sub;2&thinsp;n levels total, the overall work is O(n log n).
+        <div class="concept-box">
+          <strong>Divide &amp; Conquer:</strong>
+          A(x) = A_even(x&sup2;) + x&middot;A_odd(x&sup2;).
+          Recurrence: T(n) = 2T(n/2) + O(n) &rarr; O(n log n).
+        </div>
+        <h4>Worked Example</h4>
+        A=[1,2,3,4], B=[1,1,1,1]. FFT pads to n=8, evaluates at 8 roots of unity,
+        multiplies pointwise, inverse-FFTs to get C=[1,3,6,10,9,7,4].
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="viz-header">
+      <span class="viz-title">FFT Butterfly Network &mdash; 3-Step Polynomial Multiplication</span>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--acc)"></div>Poly A</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--org)"></div>Poly B</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--grn)"></div>Result C</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ylw)"></div>Active Level</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--txt3)"></div>Pending</div>
+      </div>
+    </div>
+    <div class="viz-area">
+      <div class="viz-placeholder" id="p2-placeholder">
+        <div class="ph-icon">&#8767;</div>
+        <div class="ph-text">
+          Enter two polynomials on the left<br>then press <strong style="color:var(--acc)">Build Steps</strong>
+        </div>
+        <div class="ph-arrow">&#8592;</div>
+      </div>
+      <svg id="p2-svg" class="canvas">
+        <g id="p2-graph-layer"></g>
+      </svg>
+    </div>
+  </div>
+
+</div><!-- /tool-body -->
+</div><!-- /part-1 -->
+
+
+<!-- ============================================================
+     PART 3 — POLLARD'S RHO FACTORIZATION
+     ============================================================ -->
+<div class="part" id="part-2">
+<div class="tool-body">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- 1. Input -->
+    <div class="section">
+      <div class="section-header">Factorization Input</div>
+      <div class="section-body">
+        <label>Composite number n</label>
+        <input type="number" id="p3-n" value="8051" min="4">
+
+        <label style="margin-top:10px">Constant c &nbsp;(pseudo-random function: f(x) = x&sup2; + c mod n)</label>
+        <input type="number" id="p3-c" value="1" min="1">
+
+        <label style="margin-top:10px">Starting value x0</label>
+        <input type="number" id="p3-x0" value="2" min="1">
+
+        <div class="presets">
+          <button class="preset-btn" onclick="p3_preset(0)">n=77 (7x11)</button>
+          <button class="preset-btn" onclick="p3_preset(1)">n=8051 (83x97)</button>
+          <button class="preset-btn" onclick="p3_preset(2)">n=1387 (19x73)</button>
+          <button class="preset-btn" onclick="p3_preset(3)">n=9073 (89x101)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Playback Controls -->
+    <div class="section">
+      <div class="section-header">Playback Controls</div>
+      <div class="section-body">
+        <div class="speed-row">
+          <span class="speed-label-txt">SPEED</span>
+          <input type="range" id="p3-speed" min="0.25" max="4" step="0.25" value="1"
+                 oninput="document.getElementById('p3-speed-val').textContent = this.value + 'x'">
+          <span class="speed-val" id="p3-speed-val">1x</span>
+        </div>
+        <div class="ctrl-row">
+          <button class="ctrl-btn primary" onclick="p3_build()">Build Steps</button>
+          <button class="ctrl-btn"         onclick="p3_step()">Step</button>
+          <button class="ctrl-btn"         onclick="p3_play()">Play</button>
+          <button class="ctrl-btn"         onclick="p3_pause()">Pause</button>
+          <button class="ctrl-btn"         onclick="p3_reset()">Reset</button>
+        </div>
+        <div class="status-row">
+          <span class="badge badge-idle" id="p3-badge">Idle</span>
+          <span class="step-counter"     id="p3-counter">Step 0 / 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Statistics -->
+    <div class="section">
+      <div class="section-header">Live Statistics</div>
+      <div class="section-body">
+        <div class="stats-grid">
+          <div class="stat-box"><span class="stat-val" id="p3-stat-steps">0</span><span class="stat-lbl">Steps</span></div>
+          <div class="stat-box"><span class="stat-val" id="p3-stat-gcds">0</span><span class="stat-lbl">GCDs Computed</span></div>
+          <div class="stat-box"><span class="stat-val" id="p3-stat-factor">—</span><span class="stat-lbl">Factor Found</span></div>
+          <div class="stat-box"><span class="stat-val" id="p3-stat-expect">—</span><span class="stat-lbl">Expected O(n^0.25)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Pointer State -->
+    <div class="section">
+      <div class="section-header">Pointer State</div>
+      <div class="section-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;text-align:center">
+          <div style="background:var(--bg0);border:1px solid var(--tort);border-radius:5px;padding:9px">
+            <div style="color:var(--tort);font-weight:700;font-size:9px;letter-spacing:1px;margin-bottom:4px">TORTOISE</div>
+            <div style="font-size:18px;color:var(--tort)" id="p3-tort-val">—</div>
+            <div style="color:var(--txt3);font-size:9px;margin-top:2px">xi (slow)</div>
+          </div>
+          <div style="background:var(--bg0);border:1px solid var(--hare);border-radius:5px;padding:9px">
+            <div style="color:var(--hare);font-weight:700;font-size:9px;letter-spacing:1px;margin-bottom:4px">HARE</div>
+            <div style="font-size:18px;color:var(--hare)" id="p3-hare-val">—</div>
+            <div style="color:var(--txt3);font-size:9px;margin-top:2px">x2i (fast)</div>
+          </div>
+          <div style="background:var(--bg0);border:1px solid var(--border2);border-radius:5px;padding:9px">
+            <div style="color:var(--txt2);font-weight:700;font-size:9px;letter-spacing:1px;margin-bottom:4px">GCD</div>
+            <div style="font-size:18px;color:var(--txt)" id="p3-gcd-val">—</div>
+            <div style="color:var(--txt3);font-size:9px;margin-top:2px">|xi - x2i|, n</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Pseudocode -->
+    <div class="section">
+      <div class="section-header">Pseudocode &mdash; Pollard's Rho + Floyd Detection</div>
+      <div class="pseudocode" id="p3-pseudocode">
+        <div class="pc-line" id="p3-pc-0" data-tip="Entry: n=number to factor, c and x0 define the sequence">
+          <span class="pc-num">1</span><span class="pc-code">POLLARD-RHO(n, c=1, x0=2):</span>
+        </div>
+        <div class="pc-line" id="p3-pc-1" data-tip="Both pointers start at x0; d=1 means no factor yet">
+          <span class="pc-num">2</span><span class="pc-code">  x = x0;  y = x0;  d = 1</span>
+        </div>
+        <div class="pc-line" id="p3-pc-2" data-tip="Pseudo-random quadratic map modulo n">
+          <span class="pc-num">3</span><span class="pc-code">  f(x) = (x*x + c) mod n</span>
+        </div>
+        <div class="pc-line" id="p3-pc-3" data-tip="Loop until a non-trivial factor is found">
+          <span class="pc-num">4</span><span class="pc-code">  while d == 1:</span>
+        </div>
+        <div class="pc-line" id="p3-pc-4" data-tip="Tortoise: one application of f (slow pointer)">
+          <span class="pc-num">5</span><span class="pc-code">    x = f(x)           // tortoise: 1 step</span>
+        </div>
+        <div class="pc-line" id="p3-pc-5" data-tip="Hare: two applications of f (Floyd's fast pointer)">
+          <span class="pc-num">6</span><span class="pc-code">    y = f(f(y))         // hare: 2 steps</span>
+        </div>
+        <div class="pc-line" id="p3-pc-6" data-tip="If |x-y| = 0 mod p, gcd reveals the prime factor p">
+          <span class="pc-num">7</span><span class="pc-code">    d = gcd(|x - y|, n)</span>
+        </div>
+        <div class="pc-line" id="p3-pc-7" data-tip="d=n means cycle detected mod n — retry with new c">
+          <span class="pc-num">8</span><span class="pc-code">  if d == n: FAILURE (retry with new c)</span>
+        </div>
+        <div class="pc-line" id="p3-pc-8" data-tip="d is a non-trivial factor of n — success!">
+          <span class="pc-num">9</span><span class="pc-code">  return d   // non-trivial factor of n</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Step Explanation -->
+    <div class="section">
+      <div class="section-header">Step Explanation</div>
+      <div class="explanation" id="p3-explanation">
+        Enter a composite number and press Build to begin.
+      </div>
+    </div>
+
+    <!-- 7. History Table -->
+    <div class="section">
+      <div class="section-header">Step History</div>
+      <div class="history-wrap">
+        <table class="history-table">
+          <thead>
+            <tr><th>#</th><th>Tortoise xi</th><th>Hare x2i</th><th>gcd</th></tr>
+          </thead>
+          <tbody id="p3-history"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 8. Educational Overview -->
+    <div class="section">
+      <button class="edu-toggle" onclick="toggleEdu(this)">
+        Algorithm Overview &amp; Key Concepts <span class="arrow">&#9660;</span>
+      </button>
+      <div class="edu-body">
+        <h4>What is Pollard's Rho?</h4>
+        A probabilistic factorization algorithm (John Pollard, 1975) with expected runtime O(n^(1/4)) &mdash;
+        far faster than trial division at O(n^(1/2)).
+        <div class="concept-box">
+          <strong>Birthday Paradox:</strong> Among about sqrt(p) random values mod p
+          (p = smallest prime factor of n), two will collide with high probability.
+          This collision mod p reveals p via GCD.
+        </div>
+        <h4>Floyd's Cycle Detection</h4>
+        The sequence x0, f(x0), f(f(x0)), ... is eventually periodic modulo p &mdash;
+        it forms a rho shape: a tail leading into a cycle.
+        The tortoise moves 1 step per iteration; the hare moves 2.
+        <div class="concept-box">
+          <strong>Key insight:</strong> When tortoise x equals hare y mod p,
+          then p divides gcd(|x&minus;y|, n). Since p divides n but p does not equal n,
+          we get 1 &lt; gcd &lt; n &mdash; a real non-trivial factor.
+        </div>
+        <h4>Worked Example</h4>
+        n=77, c=1, x0=2. Sequence: 2, 5, 26, 677 mod 77 = 677-8*77=61, ...
+        Eventually gcd(|xi - x2i|, 77) = 7. Factor found: 7 &times; 11 = 77. &#10003;
+      </div>
+    </div>
+
+  </div><!-- /left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="viz-header">
+      <span class="viz-title">Pollard's Rho &mdash; Pseudo-Random Sequence &amp; Floyd's Cycle Detection</span>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--tort)"></div>Tortoise (slow)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--hare)"></div>Hare (fast)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--found)"></div>Factor Found</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--ylw)"></div>Visited</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--txt3)"></div>Unvisited</div>
+      </div>
+    </div>
+    <div class="viz-area">
+      <div class="viz-placeholder" id="p3-placeholder">
+        <div class="ph-icon">&#961;</div>
+        <div class="ph-text">
+          Enter a composite number on the left<br>then press <strong style="color:var(--acc)">Build Steps</strong>
+        </div>
+        <div class="ph-arrow">&#8592;</div>
+      </div>
+      <svg id="p3-svg" class="canvas">
+        <defs>
+          <marker id="arr-seq"   markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3z" fill="var(--txt3)"/>
+          </marker>
+          <marker id="arr-seq-v" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L6,3z" fill="var(--border2)"/>
+          </marker>
+        </defs>
+        <g id="p3-graph-layer"></g>
+      </svg>
+    </div>
+  </div>
+
+</div><!-- /tool-body -->
+</div><!-- /part-2 -->
+
+
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
+<script>
+
+/* ------------------------------------------------------------------
+   TAB SWITCHING
+   ------------------------------------------------------------------ */
+function switchTab(i) {
+  /* parts: 0=home, 1=part-0(flow), 2=part-1(fft), 3=part-2(pollard) */
+  document.querySelectorAll('.part').forEach((p, j) => p.classList.toggle('active', j === i));
+  document.querySelectorAll('.nav-btn').forEach((b, j) => b.classList.toggle('active', j === i));
+}
+
+/* ------------------------------------------------------------------
+   EDUCATIONAL COLLAPSIBLE
+   ------------------------------------------------------------------ */
+function toggleEdu(btn) {
+  btn.classList.toggle('open');
+  btn.nextElementSibling.classList.toggle('open');
+}
+
+/* ------------------------------------------------------------------
+   SHARED UTILITIES
+   ------------------------------------------------------------------ */
+function setStatus(badgeId, state) {
+  const el = document.getElementById(badgeId);
+  const labels = { idle:'Idle', ready:'Ready', playing:'Playing', paused:'Paused', done:'Done' };
+  el.textContent = labels[state] ?? state;
+  el.className   = 'badge badge-' + state;
+}
+
+function setCounter(id, cur, total) {
+  document.getElementById(id).textContent = 'Step ' + cur + ' / ' + total;
+}
+
+function highlightPC(partId, lineIndex) {
+  var lines = document.querySelectorAll('#' + partId + ' .pc-line');
+  lines.forEach(function(el, i) {
+    el.classList.toggle('active', i === lineIndex);
+  });
+  /* scroll ONLY within the pseudocode container — never move the page */
+  if (lineIndex >= 0 && lines[lineIndex]) {
+    var activeLine = lines[lineIndex];
+    var box = activeLine.closest('.pseudocode');
+    if (box) {
+      var lineTop    = activeLine.offsetTop;
+      var lineBottom = lineTop + activeLine.offsetHeight;
+      var boxTop     = box.scrollTop;
+      var boxBottom  = boxTop + box.clientHeight;
+      if (lineTop < boxTop) {
+        box.scrollTop = lineTop - 4;
+      } else if (lineBottom > boxBottom) {
+        box.scrollTop = lineBottom - box.clientHeight + 4;
+      }
+    }
+  }
+}
+
+function clearPC(partId) {
+  document.querySelectorAll('#' + partId + ' .pc-line').forEach(function(el) {
+    el.classList.remove('active');
+  });
+}
+
+/* Jump-to-step registry: keyed by tbodyId, value = callback(stepIndex) */
+var _jumpRegistry = {};
+
+function registerJump(tbodyId, callback) {
+  _jumpRegistry[tbodyId] = callback;
+}
+
+function addHistoryRow(tbodyId, cells, isCurrent, stepIndex) {
+  var tbody = document.getElementById(tbodyId);
+  var tr    = document.createElement('tr');
+  if (isCurrent) tr.classList.add('current');
+
+  /* clicking any row jumps to that step if a callback is registered */
+  var idx = (stepIndex !== undefined) ? stepIndex : tbody.rows.length;
+  tr.style.cursor = 'pointer';
+  tr.addEventListener('click', function() {
+    if (_jumpRegistry[tbodyId]) {
+      /* mark clicked row as current, clear others */
+      var rows = tbody.querySelectorAll('tr');
+      rows.forEach(function(r) { r.classList.remove('current'); });
+      tr.classList.add('current');
+      _jumpRegistry[tbodyId](idx);
+    }
+  });
+
+  cells.forEach(function(text) {
+    var td = document.createElement('td');
+    td.textContent = text;
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+
+  /* auto-scroll only when adding the current row */
+  if (isCurrent) {
+    var wrap = tbody.closest('.history-wrap');
+    wrap.scrollTop = wrap.scrollHeight;
+  }
+}
+
+function clearHistory(tbodyId) {
+  document.getElementById(tbodyId).innerHTML = '';
+}
+
+function gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { var t = b; b = a % b; a = t; }
+  return a;
+}
+
+function svgEl(tag, attrs) {
+  var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (var k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+function svgText(content, attrs) {
+  var el = svgEl('text', attrs);
+  el.textContent = content;
+  return el;
+}
+
+function showPlaceholder(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'flex';
+}
+function hidePlaceholder(id) {
+  var el = document.getElementById(id);
+  if (el) el.style.display = 'none';
+}
+
+/* ==================================================================
+   PART 1 — EDMONDS-KARP MAX FLOW (Full Implementation)
+   ================================================================== */
+
+var P1_PRESETS = [
+  /* 0 — Simple 4-node */
+  "s,a,4\ns,b,3\na,t,3\nb,t,5\na,b,1",
+  /* 1 — Classic CLRS Ch26 */
+  "s,a,10\ns,b,10\na,b,2\na,c,4\na,d,8\nb,d,9\nc,t,10\nd,t,10",
+  /* 2 — Diamond */
+  "s,a,5\ns,b,5\na,c,3\na,d,4\nb,c,4\nb,d,3\nc,t,5\nd,t,5",
+  /* 3 — Parallel paths */
+  "s,a,7\ns,b,5\ns,c,3\na,t,6\nb,t,4\nc,t,3"
+];
+
+/* ---- state ---- */
+var p1State = {
+  steps: [],       /* pre-computed animation steps  */
+  idx:   -1,       /* current step index            */
+  playing: false,
+  timer:   null,
+  nodes:   [],     /* node names                    */
+  nodePos: {},     /* {name: {x,y}}                 */
+  E:       [],     /* edge list [{u,v,cap,flow}]     */
+  adj:     {}      /* adj[u][v] = edge index         */
+};
+
+function p1_preset(i) {
+  document.getElementById('p1-input').value = P1_PRESETS[i];
+}
+
+/* ---------- parse ---------- */
+function p1_parse() {
+  var lines = document.getElementById('p1-input').value.trim().split('\n');
+  var nodeSet = {};
+  var rawEdges = [];
+  lines.forEach(function(line) {
+    var parts = line.trim().split(',');
+    if (parts.length >= 3) {
+      var u = parts[0].trim(), v = parts[1].trim(), c = parseInt(parts[2]);
+      if (u && v && !isNaN(c) && c > 0) {
+        nodeSet[u] = 1; nodeSet[v] = 1;
+        rawEdges.push({ u: u, v: v, cap: c });
+      }
+    }
+  });
+  return { nodes: Object.keys(nodeSet), rawEdges: rawEdges };
+}
+
+/* ---------- build edge list with paired forward/backward edges ---------- */
+function p1_buildGraph(rawEdges, nodes) {
+  /* E[i] and E[i^1] are always a forward/backward pair */
+  var E = [];
+  var adj = {};
+  nodes.forEach(function(n) { adj[n] = {}; });
+
+  rawEdges.forEach(function(re) {
+    var fi = E.length;
+    E.push({ u: re.u, v: re.v, cap: re.cap, flow: 0 });
+    var bi = E.length;
+    E.push({ u: re.v, v: re.u, cap: 0,      flow: 0 });  /* reverse */
+    if (!adj[re.u]) adj[re.u] = {};
+    if (!adj[re.v]) adj[re.v] = {};
+    adj[re.u][re.v] = fi;
+    adj[re.v][re.u] = bi;
+  });
+  return { E: E, adj: adj };
+}
+
+/* ---------- BFS on residual ---------- */
+function p1_bfs(E, adj, src, snk, nodes) {
+  var parent = {};   /* parent[v] = edge-index used to reach v */
+  var seen   = {};
+  seen[src]  = true;
+  var queue  = [src];
+  while (queue.length) {
+    var u = queue.shift();
+    if (u === snk) break;
+    var nbrs = adj[u] || {};
+    Object.keys(nbrs).forEach(function(v) {
+      var ei = nbrs[v];
+      if (!seen[v] && (E[ei].cap - E[ei].flow) > 0) {
+        seen[v]   = true;
+        parent[v] = ei;
+        queue.push(v);
+      }
+    });
+  }
+  if (!seen[snk]) return null;
+  /* reconstruct path as list of edge indices */
+  var path = [], cur = snk;
+  while (cur !== src) {
+    var ei = parent[cur];
+    path.unshift(ei);
+    cur = E[ei].u;
+  }
+  return path;
+}
+
+/* ---------- path as string ---------- */
+function p1_pathStr(path, E) {
+  if (!path || !path.length) return '—';
+  var nodes = [E[path[0]].u];
+  path.forEach(function(ei) { nodes.push(E[ei].v); });
+  return nodes.join(' → ');
+}
+
+/* ---------- layout: BFS layering ---------- */
+function p1_layout(nodes, adj) {
+  var svg = document.getElementById('p1-svg');
+  var W   = svg.clientWidth  || 700;
+  var H   = svg.clientHeight || 500;
+  var src = nodes.indexOf('s') >= 0 ? 's' : nodes[0];
+
+  /* BFS layers */
+  var layers = {}, layer = {}, seen = {}, q = [src], d = 0;
+  seen[src] = true; layer[src] = 0; layers[0] = [src];
+  while (q.length) {
+    var nxt = [];
+    q.forEach(function(u) {
+      var nbrs = adj[u] || {};
+      Object.keys(nbrs).forEach(function(v) {
+        if (!seen[v]) {
+          seen[v] = true; layer[v] = layer[u] + 1;
+          if (!layers[layer[v]]) layers[layer[v]] = [];
+          layers[layer[v]].push(v);
+          nxt.push(v);
+        }
+      });
+    });
+    q = nxt;
+  }
+  /* any node not yet seen */
+  nodes.forEach(function(n) {
+    if (!seen[n]) {
+      var l = Object.keys(layers).length;
+      layers[l] = [n]; layer[n] = l;
+    }
+  });
+
+  var lCount = Object.keys(layers).length;
+  var padX = 80, padY = 60;
+  var pos = {};
+  Object.keys(layers).forEach(function(li) {
+    var l = parseInt(li);
+    var ns = layers[l];
+    var x  = padX + (lCount === 1 ? (W - 2*padX)/2 : l / (lCount-1) * (W - 2*padX));
+    ns.forEach(function(n, i) {
+      var y = padY + (i + 1) / (ns.length + 1) * (H - 2*padY);
+      pos[n] = { x: Math.round(x), y: Math.round(y) };
+    });
+  });
+  return pos;
+}
+
+/* ---------- pre-compute ALL animation steps ---------- */
+function p1_computeSteps(nodes, E, adj) {
+  var src = nodes.indexOf('s') >= 0 ? 's' : nodes[0];
+  var snk = nodes.indexOf('t') >= 0 ? 't' : nodes[nodes.length - 1];
+
+  /* deep-clone edge list */
+  function cloneE(E) { return E.map(function(e) { return { u:e.u, v:e.v, cap:e.cap, flow:e.flow }; }); }
+
+  var steps = [];
+  var maxFlow = 0, augCount = 0, bfsCount = 0;
+
+  /* Step 0 — init */
+  steps.push({
+    type: 'init',
+    E:    cloneE(E),
+    augPath: [],
+    cutEdges: [],
+    reachSet: null,
+    bottleneck: null,
+    maxFlow: 0, augCount: 0, bfsCount: 0,
+    pcLine: 1,
+    expl: 'Initialize: all flows = 0. Source = ' + src + ', Sink = ' + snk + '. ' + nodes.length + ' nodes, ' + (E.length/2) + ' edges.'
+  });
+
+  /* Run Edmonds-Karp */
+  for (var iter = 0; iter < 50; iter++) {
+    bfsCount++;
+    var path = p1_bfs(E, adj, src, snk, nodes);
+
+    /* BFS step — show the found path (or none) */
+    steps.push({
+      type: path ? 'bfs-found' : 'bfs-none',
+      E:    cloneE(E),
+      augPath: path || [],
+      cutEdges: [],
+      reachSet: null,
+      bottleneck: null,
+      maxFlow: maxFlow, augCount: augCount, bfsCount: bfsCount,
+      pcLine: 2,
+      expl: path
+        ? 'BFS #' + bfsCount + ' found augmenting path: ' + p1_pathStr(path, E)
+        : 'BFS #' + bfsCount + ': no augmenting path exists in the residual graph. Algorithm done.'
+    });
+
+    if (!path) {
+      /* compute reachable set and min-cut edges */
+      var reach = {};
+      var q2 = [src]; reach[src] = true;
+      while (q2.length) {
+        var u2 = q2.shift();
+        var nbrs2 = adj[u2] || {};
+        Object.keys(nbrs2).forEach(function(v2) {
+          var ei2 = nbrs2[v2];
+          if (!reach[v2] && (E[ei2].cap - E[ei2].flow) > 0) {
+            reach[v2] = true; q2.push(v2);
+          }
+        });
+      }
+      var cutEdges = [];
+      E.forEach(function(e, ei) {
+        if (e.cap > 0 && reach[e.u] && !reach[e.v]) cutEdges.push(ei);
+      });
+      var cutCap = 0;
+      cutEdges.forEach(function(ei) { cutCap += E[ei].cap; });
+
+      steps.push({
+        type: 'done',
+        E:    cloneE(E),
+        augPath: [],
+        cutEdges: cutEdges,
+        reachSet: Object.keys(reach),
+        bottleneck: null,
+        maxFlow: maxFlow, augCount: augCount, bfsCount: bfsCount,
+        cutCap: cutCap,
+        pcLine: 8,
+        expl: 'DONE. Max Flow = ' + maxFlow + '.  Min-Cut capacity = ' + cutCap +
+              '.  Strong Duality verified: ' + maxFlow + ' = ' + cutCap + ' ✓  (cut edges highlighted in red)'
+      });
+      break;
+    }
+
+    /* bottleneck */
+    var bn = Infinity;
+    path.forEach(function(ei) { bn = Math.min(bn, E[ei].cap - E[ei].flow); });
+
+    steps.push({
+      type: 'bottleneck',
+      E:    cloneE(E),
+      augPath: path,
+      cutEdges: [],
+      reachSet: null,
+      bottleneck: bn,
+      maxFlow: maxFlow, augCount: augCount, bfsCount: bfsCount,
+      pcLine: 3,
+      expl: 'Bottleneck capacity along path = ' + bn + ' (minimum residual capacity). Will push ' + bn + ' units.'
+    });
+
+    /* augment */
+    path.forEach(function(ei) {
+      E[ei].flow     += bn;
+      E[ei ^ 1].flow -= bn;   /* update reverse edge */
+    });
+    maxFlow  += bn;
+    augCount += 1;
+
+    steps.push({
+      type: 'augment',
+      E:    cloneE(E),
+      augPath: path,
+      cutEdges: [],
+      reachSet: null,
+      bottleneck: bn,
+      maxFlow: maxFlow, augCount: augCount, bfsCount: bfsCount,
+      pcLine: 5,
+      expl: 'Augmented ' + bn + ' units along ' + p1_pathStr(path, E) +
+            '. Residual graph updated (forward −' + bn + ', backward +' + bn + '). Total flow = ' + maxFlow + '.'
+    });
+  }
+
+  return steps;
+}
+
+/* ---------- draw one step onto the SVG ---------- */
+function p1_draw(stepIdx) {
+  var g   = document.getElementById('p1-graph-layer');
+  g.innerHTML = '';
+
+  if (!p1State.steps.length) return;
+
+  var step = stepIdx >= 0 ? p1State.steps[stepIdx] : p1State.steps[0];
+  var E    = step.E;
+  var pos  = p1State.nodePos;
+  var nodes = p1State.nodes;
+  var src  = nodes.indexOf('s') >= 0 ? 's' : nodes[0];
+  var snk  = nodes.indexOf('t') >= 0 ? 't' : nodes[nodes.length - 1];
+
+  var augSet  = {};
+  step.augPath.forEach(function(ei) { augSet[ei] = true; });
+  var cutSet  = {};
+  step.cutEdges.forEach(function(ei) { cutSet[ei] = true; });
+  var reachSet = {};
+  if (step.reachSet) step.reachSet.forEach(function(n) { reachSet[n] = true; });
+
+  /* ---- draw edges ---- */
+  E.forEach(function(e, ei) {
+    if (e.cap === 0 && e.flow <= 0) return;          /* skip pure-zero reverse edges */
+    if (e.cap === 0 && !augSet[ei] && !cutSet[ei]) return;
+
+    var pu = pos[e.u], pv = pos[e.v];
+    if (!pu || !pv) return;
+
+    /* offset parallel edges so they don't overlap */
+    var dx = pv.x - pu.x, dy = pv.y - pu.y;
+    var len = Math.sqrt(dx*dx + dy*dy) || 1;
+    var nx = -dy / len * 9, ny = dx / len * 9;
+
+    var isCut = cutSet[ei];
+    var isAug = augSet[ei];
+    var hasFlow = e.cap > 0 && e.flow > 0;
+    var isFull  = e.cap > 0 && e.flow >= e.cap;
+    var isResidual = e.cap === 0 && e.flow < 0;   /* backward residual capacity */
+
+    var stroke, marker, sw, dash = '', op = 1;
+
+    if (isCut) {
+      stroke = '#f0504a'; marker = 'url(#arr-red)'; sw = 3;
+    } else if (isAug) {
+      stroke = '#10d9a0'; marker = 'url(#arr-green)'; sw = 3; dash = '8,4';
+    } else if (isFull) {
+      stroke = '#3d5a7a'; marker = 'url(#arr-gray)'; sw = 1.5; op = 0.6;
+    } else if (hasFlow) {
+      stroke = '#3da9fc'; marker = 'url(#arr-blue)'; sw = 2;
+    } else if (isResidual) {
+      stroke = '#8b5cf6'; marker = 'url(#arr-purple)'; sw = 1.5; op = 0.6;
+    } else {
+      stroke = '#1f2e50'; marker = 'url(#arr-gray)'; sw = 1.5; op = 0.55;
+    }
+
+    /* shift endpoint so arrowhead doesn't overlap node circle */
+    var nodeR = 22;
+    var ex = pu.x + nx + (pv.x + nx - pu.x - nx) * nodeR / len;
+    var ey = pu.y + ny + (pv.y + ny - pu.y - ny) * nodeR / len;
+    var ex2 = pv.x + nx - (pv.x + nx - pu.x - nx) * nodeR / len;
+    var ey2 = pv.y + ny - (pv.y + ny - pu.y - ny) * nodeR / len;
+
+    var line = svgEl('line', {
+      x1: pu.x + nx, y1: pu.y + ny,
+      x2: pv.x + nx, y2: pv.y + ny,
+      stroke: stroke, 'stroke-width': sw,
+      'marker-end': marker, opacity: op,
+      'stroke-dasharray': dash
+    });
+    if (isAug) line.classList.add('anim-flow');
+    line.classList.add('viz-edge');
+    g.appendChild(line);
+
+    /* edge label: flow/cap or residual cap */
+    var mx = (pu.x + nx + pv.x + nx) / 2 + nx * 0.6;
+    var my = (pu.y + ny + pv.y + ny) / 2 + ny * 0.6;
+    var lbl, lfill;
+    if (e.cap > 0) {
+      lbl   = e.flow + '/' + e.cap;
+      lfill = hasFlow ? '#3da9fc' : '#3d5a7a';
+    } else {
+      /* reverse edge: show residual capacity = -flow */
+      var rescap = -e.flow;
+      if (rescap <= 0) return;
+      lbl   = '(' + rescap + ')';
+      lfill = '#8b5cf6';
+    }
+    if (isCut) lfill = '#f0504a';
+    if (isAug) lfill = '#10d9a0';
+
+    var ltxt = svgText(lbl, {
+      x: mx, y: my,
+      'text-anchor': 'middle', 'dominant-baseline': 'middle',
+      'font-size': '10', 'font-family': 'IBM Plex Mono,monospace',
+      fill: lfill, 'font-weight': hasFlow || isAug ? '700' : '400'
+    });
+    ltxt.classList.add('viz-label');
+    g.appendChild(ltxt);
+  });
+
+  /* ---- draw nodes ---- */
+  nodes.forEach(function(n) {
+    var p = pos[n];
+    if (!p) return;
+
+    var isSrc = n === src, isSnk = n === snk;
+    var inReach = step.type === 'done' && reachSet[n];
+    var inAugPath = false;
+    step.augPath.forEach(function(ei) {
+      if (E[ei].u === n || E[ei].v === n) inAugPath = true;
+    });
+
+    var fill, stroke, textFill;
+    if (step.type === 'done' && isSrc)        { fill = 'rgba(16,217,160,.25)';  stroke = '#10d9a0'; textFill = '#10d9a0'; }
+    else if (step.type === 'done' && inReach) { fill = 'rgba(16,217,160,.1)';   stroke = '#10d9a0'; textFill = '#10d9a0'; }
+    else if (isSrc)                           { fill = 'rgba(16,217,160,.15)';   stroke = '#10d9a0'; textFill = '#10d9a0'; }
+    else if (isSnk)                           { fill = 'rgba(240,80,74,.15)';   stroke = '#f0504a'; textFill = '#f0504a'; }
+    else if (inAugPath && step.augPath.length){ fill = 'rgba(61,169,252,.18)';   stroke = '#3da9fc'; textFill = '#3da9fc'; }
+    else                                      { fill = 'var(--bg3)';            stroke = '#263d60'; textFill = '#e2eaf8'; }
+
+    var circle = svgEl('circle', { cx: p.x, cy: p.y, r: 22, fill: fill, stroke: stroke, 'stroke-width': '2' });
+    circle.classList.add('viz-node');
+    if (inAugPath && step.type !== 'done') circle.classList.add('anim-glow');
+    g.appendChild(circle);
+
+    var txt = svgText(n, {
+      x: p.x, y: p.y,
+      'text-anchor': 'middle', 'dominant-baseline': 'middle',
+      'font-size': '14', 'font-family': 'IBM Plex Mono,monospace',
+      'font-weight': '700', fill: textFill
+    });
+    txt.classList.add('viz-label');
+    g.appendChild(txt);
+
+    /* S / T label below for source/sink */
+    if (isSrc) {
+      g.appendChild(svgText('SOURCE', { x: p.x, y: p.y + 34,
+        'text-anchor': 'middle', 'font-size': '8', fill: '#10d9a0',
+        'font-family': 'IBM Plex Mono,monospace', 'letter-spacing': '1' }));
+    }
+    if (isSnk) {
+      g.appendChild(svgText('SINK', { x: p.x, y: p.y + 34,
+        'text-anchor': 'middle', 'font-size': '8', fill: '#f0504a',
+        'font-family': 'IBM Plex Mono,monospace', 'letter-spacing': '1' }));
+    }
+  });
+
+  /* ---- bottleneck badge ---- */
+  if (step.bottleneck !== null && step.type !== 'augment') {
+    var svg = document.getElementById('p1-svg');
+    var bx = (svg.clientWidth || 700) - 160, by = 14;
+    var bg = svgEl('rect', { x: bx, y: by, width: 148, height: 30, rx: 5,
+      fill: 'rgba(246,185,59,.12)', stroke: '#f6b93b', 'stroke-width': '1' });
+    g.appendChild(bg);
+    g.appendChild(svgText('Bottleneck: ' + step.bottleneck, {
+      x: bx + 74, y: by + 18, 'text-anchor': 'middle',
+      'font-size': '11', 'font-family': 'IBM Plex Mono,monospace',
+      'font-weight': '700', fill: '#f6b93b'
+    }));
+  }
+
+  /* ---- min-cut dashed line across SVG when done ---- */
+  if (step.type === 'done' && step.cutEdges.length) {
+    var svgEl2 = document.getElementById('p1-svg');
+    var svgH   = svgEl2.clientHeight || 500;
+    /* find mid-x between the two sides of the cut */
+    var cutMidX = 0, cnt = 0;
+    step.cutEdges.forEach(function(ei) {
+      var pu2 = pos[E[ei].u], pv2 = pos[E[ei].v];
+      if (pu2 && pv2) { cutMidX += (pu2.x + pv2.x) / 2; cnt++; }
+    });
+    if (cnt) {
+      cutMidX /= cnt;
+      var dline = svgEl('line', {
+        x1: cutMidX, y1: 10, x2: cutMidX, y2: svgH - 10,
+        stroke: '#f0504a', 'stroke-width': '1.5',
+        'stroke-dasharray': '6,4', opacity: '0.45'
+      });
+      g.appendChild(dline);
+      g.appendChild(svgText('MIN CUT = ' + step.maxFlow, {
+        x: cutMidX + 6, y: 22,
+        'text-anchor': 'start', 'font-size': '10',
+        'font-family': 'IBM Plex Mono,monospace',
+        'font-weight': '700', fill: '#f0504a'
+      }));
+    }
+  }
+}
+
+/* ---------- apply step: update UI from step data ---------- */
+function p1_applyStep(idx) {
+  if (idx < 0 || idx >= p1State.steps.length) return;
+  var step = p1State.steps[idx];
+
+  p1_draw(idx);
+
+  /* pseudocode highlight */
+  highlightPC('part-0', step.pcLine);
+
+  /* counter */
+  setCounter('p1-counter', idx + 1, p1State.steps.length);
+
+  /* explanation */
+  document.getElementById('p1-explanation').textContent = step.expl;
+
+  /* stats */
+  document.getElementById('p1-stat-flow').textContent = step.maxFlow;
+  document.getElementById('p1-stat-aug').textContent  = step.augCount;
+  document.getElementById('p1-stat-bfs').textContent  = step.bfsCount;
+
+  if (step.type === 'done') {
+    document.getElementById('p1-stat-cut').textContent = step.cutCap;
+    setStatus('p1-badge', 'done');
+    /* LP duality verification */
+    document.getElementById('p1-duality-msg').textContent =
+      '✓  Max Flow (' + step.maxFlow + ') = Min Cut (' + step.cutCap +
+      ') — Strong Duality is verified!';
+    document.getElementById('p1-duality-msg').style.color = '#10d9a0';
+  } else {
+    setStatus('p1-badge', 'playing');
+  }
+
+  /* history row */
+  var pathStr = p1_pathStr(step.augPath, step.E);
+  addHistoryRow('p1-history',
+    [idx + 1, step.type, pathStr, step.maxFlow],
+    true,
+    idx
+  );
+}
+
+/* ---------- jump to a specific step (for history click) ---------- */
+function p1_jumpTo(idx) {
+  if (idx < 0 || idx >= p1State.steps.length) return;
+  p1State.idx = idx;
+  clearHistory('p1-history');
+  /* rebuild history up to idx */
+  for (var i = 0; i <= idx; i++) {
+    var s = p1State.steps[i];
+    addHistoryRow('p1-history',
+      [i + 1, s.type, p1_pathStr(s.augPath, s.E), s.maxFlow],
+      i === idx,
+      i
+    );
+  }
+  p1_draw(idx);
+  highlightPC('part-0', p1State.steps[idx].pcLine);
+  setCounter('p1-counter', idx + 1, p1State.steps.length);
+  document.getElementById('p1-explanation').textContent = p1State.steps[idx].expl;
+  document.getElementById('p1-stat-flow').textContent = p1State.steps[idx].maxFlow;
+  document.getElementById('p1-stat-aug').textContent  = p1State.steps[idx].augCount;
+  document.getElementById('p1-stat-bfs').textContent  = p1State.steps[idx].bfsCount;
+  if (p1State.steps[idx].type === 'done') setStatus('p1-badge', 'done');
+  else setStatus('p1-badge', 'paused');
+}
+
+/* ---------- public controls ---------- */
+function p1_build() {
+  p1_reset_internal();
+  hidePlaceholder('p1-placeholder');
+
+  var parsed = p1_parse();
+  if (!parsed.nodes.length) {
+    alert('No valid edges found. Format: from,to,capacity');
+    return;
+  }
+
+  var graph  = p1_buildGraph(parsed.rawEdges, parsed.nodes);
+  p1State.nodes   = parsed.nodes;
+  p1State.E       = graph.E;
+  p1State.adj     = graph.adj;
+  p1State.nodePos = p1_layout(parsed.nodes, graph.adj);
+  p1State.steps   = p1_computeSteps(parsed.nodes, graph.E, graph.adj);
+  p1State.idx     = -1;
+
+  /* register jump callback for history rows */
+  registerJump('p1-history', p1_jumpTo);
+
+  /* draw initial state */
+  p1_draw(0);
+  p1State.idx = 0;
+  setCounter('p1-counter', 1, p1State.steps.length);
+  document.getElementById('p1-explanation').textContent = p1State.steps[0].expl;
+  highlightPC('part-0', p1State.steps[0].pcLine);
+  addHistoryRow('p1-history',
+    [1, p1State.steps[0].type, '—', 0],
+    true, 0
+  );
+  setStatus('p1-badge', 'ready');
+  document.getElementById('p1-duality-msg').textContent = 'Optimal values will match when done.';
+  document.getElementById('p1-duality-msg').style.color = '#10d9a0';
+}
+
+function p1_step() {
+  if (!p1State.steps.length) return;
+  if (p1State.idx >= p1State.steps.length - 1) return;
+  p1State.idx++;
+  p1_applyStep(p1State.idx);
+}
+
+function p1_play() {
+  if (!p1State.steps.length || p1State.playing) return;
+  if (p1State.idx >= p1State.steps.length - 1) p1State.idx = -1; /* replay */
+  p1State.playing = true;
+  setStatus('p1-badge', 'playing');
+
+  function tick() {
+    if (!p1State.playing) return;
+    if (p1State.idx >= p1State.steps.length - 1) {
+      p1State.playing = false;
+      setStatus('p1-badge', 'done');
+      return;
+    }
+    p1State.idx++;
+    p1_applyStep(p1State.idx);
+    var spd = parseFloat(document.getElementById('p1-speed').value) || 1;
+    p1State.timer = setTimeout(tick, Math.round(700 / spd));
+  }
+  tick();
+}
+
+function p1_pause() {
+  p1State.playing = false;
+  clearTimeout(p1State.timer);
+  if (p1State.idx < p1State.steps.length - 1)
+    setStatus('p1-badge', 'paused');
+}
+
+function p1_reset_internal() {
+  p1State.playing = false;
+  clearTimeout(p1State.timer);
+  p1State.steps  = [];
+  p1State.idx    = -1;
+  p1State.nodes  = [];
+  p1State.nodePos = {};
+  p1State.E      = [];
+  p1State.adj    = {};
+}
+
+function p1_reset() {
+  p1_reset_internal();
+  setStatus('p1-badge', 'idle');
+  setCounter('p1-counter', 0, 0);
+  clearHistory('p1-history');
+  clearPC('part-0');
+  document.getElementById('p1-explanation').textContent = 'Build a network, then press Play or Step.';
+  document.getElementById('p1-stat-flow').textContent = '0';
+  document.getElementById('p1-stat-aug').textContent  = '0';
+  document.getElementById('p1-stat-bfs').textContent  = '0';
+  document.getElementById('p1-stat-cut').textContent  = '—';
+  document.getElementById('p1-duality-msg').textContent = 'Optimal values will match when done.';
+  document.getElementById('p1-duality-msg').style.color = '#10d9a0';
+  document.getElementById('p1-graph-layer').innerHTML  = '';
+  showPlaceholder('p1-placeholder');
+}
+
+/* ==================================================================
+   PART 2 — FFT POLYNOMIAL MULTIPLICATION (Full Implementation)
+   ================================================================== */
+
+var P2_PRESETS = [
+  { a:'1,2,3,4',   b:'1,1,1,1',   label:'Simple (deg 3 × deg 3)'   },
+  { a:'1,0,2',     b:'3,1,2',     label:'Degree 2 × Degree 2'       },
+  { a:'1,2,4,8',   b:'1,2,4,8',   label:'Powers of 2'               },
+  { a:'1,-1,1,-1', b:'1,1,-1,-1', label:'Alternating Signs'          }
+];
+
+var p2State = {
+  steps: [], idx: -1, playing: false, timer: null,
+  polyA: [], polyB: [], N: 0, levels: 0,
+  naiveResult: [], fftResult: [],
+  naiveOps: 0, fftOps: 0
+};
+
+function p2_preset(i) {
+  document.getElementById('p2-poly-a').value = P2_PRESETS[i].a;
+  document.getElementById('p2-poly-b').value = P2_PRESETS[i].b;
+}
+
+/* ---------- helpers ---------- */
+function p2_parsePoly(s) {
+  return s.split(',').map(function(x) { return parseFloat(x.trim()) || 0; });
+}
+
+function p2_nextPow2(n) { var p = 1; while (p < n) p <<= 1; return p; }
+
+function p2_fmtComplex(re, im) {
+  re = Math.round(re * 1000) / 1000;
+  im = Math.round(im * 1000) / 1000;
+  if (im === 0) return String(re);
+  if (re === 0) return im + 'i';
+  return re + (im > 0 ? '+' : '') + im + 'i';
+}
+
+function p2_fmtPoly(coeffs) {
+  var terms = coeffs.map(function(c, i) {
+    var rc = Math.round(c * 100) / 100;
+    if (rc === 0) return null;
+    if (i === 0) return String(rc);
+    var cs = (Math.abs(rc) === 1) ? '' : String(Math.abs(rc));
+    var sign = rc < 0 ? ' - ' : ' + ';
+    var xpart = i === 1 ? 'x' : 'x^' + i;
+    return sign + cs + xpart;
+  }).filter(Boolean);
+  if (!terms.length) return '0';
+  return terms.join('').replace(/^ \+ /, '');
+}
+
+/* ---------- naive multiplication ---------- */
+function p2_naiveMul(A, B) {
+  var R = new Array(A.length + B.length - 1).fill(0);
+  var ops = 0;
+  for (var i = 0; i < A.length; i++) {
+    for (var j = 0; j < B.length; j++) {
+      R[i + j] += A[i] * B[j];
+      ops++;
+    }
+  }
+  return { result: R, ops: ops };
+}
+
+/* ---------- FFT on array of [re,im] pairs ---------- */
+function p2_fftInPlace(a, invert) {
+  var n = a.length;
+  /* bit-reversal permutation */
+  for (var i = 1, j = 0; i < n; i++) {
+    var bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { var t = a[i]; a[i] = a[j]; a[j] = t; }
+  }
+  for (var len = 2; len <= n; len <<= 1) {
+    var ang = 2 * Math.PI / len * (invert ? -1 : 1);
+    var wRe = Math.cos(ang), wIm = Math.sin(ang);
+    for (var ii = 0; ii < n; ii += len) {
+      var curRe = 1, curIm = 0;
+      for (var jj = 0; jj < len / 2; jj++) {
+        var uRe = a[ii + jj][0],      uIm = a[ii + jj][1];
+        var vRe = a[ii + jj + len/2][0] * curRe - a[ii + jj + len/2][1] * curIm;
+        var vIm = a[ii + jj + len/2][0] * curIm + a[ii + jj + len/2][1] * curRe;
+        a[ii + jj]           = [uRe + vRe, uIm + vIm];
+        a[ii + jj + len / 2] = [uRe - vRe, uIm - vIm];
+        var nRe = curRe * wRe - curIm * wIm;
+        curIm   = curRe * wIm + curIm * wRe;
+        curRe   = nRe;
+      }
+    }
+  }
+  if (invert) {
+    for (var k = 0; k < n; k++) a[k] = [a[k][0] / n, a[k][1] / n];
+  }
+}
+
+/* ---------- build full step sequence ---------- */
+function p2_computeSteps(rawA, rawB) {
+  var steps = [];
+  var N = p2_nextPow2(rawA.length + rawB.length);
+  var A = rawA.slice(); while (A.length < N) A.push(0);
+  var B = rawB.slice(); while (B.length < N) B.push(0);
+  var levels = Math.log2(N);
+  var naive  = p2_naiveMul(rawA, rawB);
+  var fftOps = Math.round(3 * (N/2) * Math.log2(N) + N);
+
+  /* ---- compute evaluation values so we can show them ---- */
+  var fa = A.map(function(v){return [v,0];}), fb = B.map(function(v){return [v,0];});
+  p2_fftInPlace(fa, false);
+  p2_fftInPlace(fb, false);
+  var evalA = fa.map(function(v){return Math.round(v[0]*100)/100 + (v[1]>=0?'+':'')+Math.round(v[1]*100)/100+'i';});
+  var evalB = fb.map(function(v){return Math.round(v[0]*100)/100 + (v[1]>=0?'+':'')+Math.round(v[1]*100)/100+'i';});
+  var fc = fa.map(function(v,i){return [v[0]*fb[i][0]-v[1]*fb[i][1], v[0]*fb[i][1]+v[1]*fb[i][0]];});
+  var evalC = fc.map(function(v){return Math.round(v[0]*100)/100 + (v[1]>=0?'+':'')+Math.round(v[1]*100)/100+'i';});
+  var fc2 = fc.slice().map(function(v){return [v[0],v[1]];});
+  p2_fftInPlace(fc2, true);
+  var fftResult = fc2.map(function(v){return Math.round(v[0]*1e6)/1e6;});
+  while (fftResult.length > 1 && Math.abs(fftResult[fftResult.length-1]) < 1e-9) fftResult.pop();
+
+  var mults = 0, adds = 0;
+
+  /* ── STEP 0: Input ── */
+  steps.push({
+    phase:'Input', subPhase:'init', pcLine:0, mults:0, adds:0,
+    fftPass:null, level:0, levels:levels, N:N,
+    rootsUsed:[], half:0,
+    expl:'INPUT: A(x) = '+p2_fmtPoly(rawA)+'  |  B(x) = '+p2_fmtPoly(rawB)+
+         '.  Naive needs '+naive.ops+' ops (O(n²)).  FFT needs ~'+fftOps+' ops (O(n log n)).'+
+         '  Padding both to n='+N+' (next power of 2 ≥ '+rawA.length+'+'+rawB.length+').',
+    detail:'Input & pad'
+  });
+
+  /* ── STEP 1: Even/odd split ── */
+  steps.push({
+    phase:'FFT — Split', subPhase:'split', pcLine:2, mults:0, adds:0,
+    fftPass:null, level:-1, levels:levels, N:N,
+    rootsUsed:[], half:0,
+    expl:'SPLIT (Divide step): A_even = ['+A.filter(function(_,i){return i%2===0;}).join(', ')+']  '+
+         'A_odd = ['+A.filter(function(_,i){return i%2!==0;}).join(', ')+'].  '+
+         'Same split for B. This separates even-indexed from odd-indexed coefficients — the key to FFT\'s divide-and-conquer.',
+    detail:'Even/odd split'
+  });
+
+  /* ── FFT(A) levels ── */
+  for (var lv = 0; lv < levels; lv++) {
+    var bsz = 2 << lv, half = bsz >> 1;
+    mults += N/2; adds += N;
+    var ru = []; for (var r=0;r<half;r++) ru.push(r*(N/bsz));
+    steps.push({
+      phase:'FFT(A) — Level '+(lv+1)+'/'+levels,
+      subPhase:'fftA', pcLine: lv===0 ? 3 : 6,
+      mults:mults, adds:adds,
+      fftPass:'A', level:lv, levels:levels, N:N,
+      blockSize:bsz, half:half, numBlocks:N/bsz,
+      rootsUsed:ru,
+      expl:'FFT(A) Level '+(lv+1)+'/'+levels+': block size='+bsz+', '+(N/bsz)+' blocks.  '+
+           'Each butterfly: t = ω^k · a_odd[k],  then  a[k] = a_even[k]+t,  a[k+n/2] = a_even[k]−t.  '+
+           'Twiddle ω^k for k=0..'+(half-1)+'.  Multiplications this level: '+(N/2)+'.',
+      detail:'FFT(A) Lv '+(lv+1)
+    });
+  }
+
+  /* ── FFT(B) levels ── */
+  for (var lv2 = 0; lv2 < levels; lv2++) {
+    var bs2=2<<lv2, h2=bs2>>1;
+    mults += N/2; adds += N;
+    var ru2=[]; for (var r2=0;r2<h2;r2++) ru2.push(r2*(N/bs2));
+    steps.push({
+      phase:'FFT(B) — Level '+(lv2+1)+'/'+levels,
+      subPhase:'fftB', pcLine: lv2===0 ? 3 : 6,
+      mults:mults, adds:adds,
+      fftPass:'B', level:lv2, levels:levels, N:N,
+      blockSize:bs2, half:h2, numBlocks:N/bs2,
+      rootsUsed:ru2,
+      expl:'FFT(B) Level '+(lv2+1)+'/'+levels+': identical butterfly structure applied to polynomial B.  '+
+           'After all levels, B is evaluated at n='+N+' roots of unity.  '+
+           'Block size='+bs2+', '+(N/2)+' complex multiplications.',
+      detail:'FFT(B) Lv '+(lv2+1)
+    });
+  }
+
+  /* ── Pointwise × ── */
+  mults += N;
+  var pwShow = Math.min(N, 4);
+  var pwExamples = [];
+  for (var pi=0; pi<pwShow; pi++) {
+    pwExamples.push('C['+pi+'] = A['+pi+'] × B['+pi+'] = '+evalA[pi]+' × '+evalB[pi]+' = '+evalC[pi]);
+  }
+  steps.push({
+    phase:'Pointwise ×',
+    subPhase:'pointwise', pcLine:5,
+    mults:mults, adds:adds,
+    fftPass:null, level:levels, levels:levels, N:N,
+    rootsUsed:[], half:0,
+    evalA:evalA, evalB:evalB, evalC:evalC,
+    expl:'POINTWISE MULTIPLY: C[k] = A_eval[k] × B_eval[k] for k=0…'+(N-1)+'.  '+
+         'This is O(n)='+N+' complex multiplications.  Examples:  '+pwExamples.slice(0,2).join('  |  ')+'  …  '+
+         'This is the key O(n) step that makes FFT efficient vs O(n²) naive.',
+    detail:'Pointwise ×'
+  });
+
+  /* ── IFFT levels ── */
+  for (var lv3 = 0; lv3 < levels; lv3++) {
+    var bs3=2<<lv3, h3=bs3>>1;
+    mults += N/2; adds += N;
+    var ru3=[]; for (var r3=0;r3<h3;r3++) ru3.push(r3*(N/bs3));
+    steps.push({
+      phase:'IFFT — Level '+(lv3+1)+'/'+levels,
+      subPhase:'ifft', pcLine: lv3===levels-1 ? 9 : 6,
+      mults:mults, adds:adds,
+      fftPass:'C', level:lv3, levels:levels, N:N,
+      blockSize:bs3, half:h3, numBlocks:N/bs3,
+      rootsUsed:ru3,
+      expl:'INVERSE FFT Level '+(lv3+1)+'/'+levels+': same butterfly structure but twiddle factor is ω̄^k = e^(−2πik/n) (conjugate).  '+
+           'This undoes the FFT evaluation, converting value-representation back to coefficients.  '+
+           'Block size='+bs3+'.  Final step divides all values by n='+N+'.',
+      detail:'IFFT Lv '+(lv3+1)
+    });
+  }
+
+  /* ── Final Result ── */
+  steps.push({
+    phase:'Result',
+    subPhase:'result', pcLine:9,
+    mults:mults, adds:adds,
+    fftPass:null, level:levels+1, levels:levels, N:N,
+    rootsUsed:[], half:0,
+    fftResult:fftResult, naiveResult:naive.result,
+    expl:'RESULT: C(x) = '+p2_fmtPoly(fftResult)+'.  Coefficients: ['+
+         fftResult.map(function(v){return Math.round(v*100)/100;}).join(', ')+'].  '+
+         'Verified: matches naive result ['+naive.result.map(function(v){return Math.round(v*10)/10;}).join(', ')+'] ✓  '+
+         'FFT used ~'+fftOps+' ops vs '+naive.ops+' naive ops — '+
+         (naive.ops/fftOps).toFixed(1)+'× speedup for n='+N+'.',
+    detail:'Done ✓'
+  });
+
+  return { steps:steps, N:N, levels:levels, naiveResult:naive.result, fftResult:fftResult, naiveOps:naive.ops, fftOps:fftOps };
+}
+
+/* ---------- draw: butterfly left 58%, unit circle right 42% ---------- */
+function p2_draw(stepIdx) {
+  var g = document.getElementById('p2-graph-layer');
+  g.innerHTML = '';
+  if (!p2State.steps.length) return;
+
+  var svg = document.getElementById('p2-svg');
+  var W   = svg.clientWidth  || 800;
+  var H   = svg.clientHeight || 500;
+  var step = p2State.steps[Math.max(0, stepIdx)];
+  var N    = p2State.N;
+  var lv   = p2State.levels;
+
+  /* canvas split */
+  var bfW  = Math.floor(W * 0.58);
+  var ucW  = W - bfW;
+  var ucCX = bfW + Math.floor(ucW / 2);
+  var ucCY = Math.floor(H * 0.44);
+  var ucR  = Math.min(Math.floor(ucW/2) - 24, Math.floor(H * 0.30));
+
+  /* ===================== BUTTERFLY ===================== */
+  var displayN = Math.min(N, 16);
+  /* cols = Input + lv FFT levels + 1 Pointwise + lv IFFT levels + Output */
+  var totalCols = 1 + lv + 1 + lv + 1;  /* Input, FFT L1..Lk, PW, IFFT L1..Lk, Output */
+  var padX = 36, padY = 32;
+  var colW = (bfW - 2*padX) / Math.max(1, totalCols - 1);
+  var rowH = (H   - 2*padY) / Math.max(1, displayN - 1);
+  var nodeR = Math.max(6, Math.min(11, rowH/2 - 2));
+
+  function np(c, r) { return { x: padX + c * colW, y: padY + r * rowH }; }
+
+  /* determine which column index is "active" based on step */
+  /* col 0=Input, 1..lv=FFT levels, lv+1=Pointwise, lv+2..2*lv+1=IFFT levels, 2*lv+2=Output */
+  var activeCol = 0;
+  if (step.subPhase === 'init' || step.subPhase === 'split') {
+    activeCol = 0;
+  } else if (step.subPhase === 'fftA' || step.subPhase === 'fftB') {
+    activeCol = step.level + 1;
+  } else if (step.subPhase === 'pointwise') {
+    activeCol = lv + 1;
+  } else if (step.subPhase === 'ifft') {
+    activeCol = lv + 2 + step.level;
+  } else if (step.subPhase === 'result') {
+    activeCol = totalCols - 1;
+  }
+
+  /* phase colour map */
+  var phaseClr = {
+    'init':'#3da9fc','split':'#f6b93b',
+    'fftA':'#3da9fc','fftB':'#f0803c',
+    'pointwise':'#8b5cf6','ifft':'#10d9a0','result':'#10d9a0'
+  };
+  var phClr = phaseClr[step.subPhase] || '#3da9fc';
+
+  /* phase banner */
+  g.appendChild(svgEl('rect',{x:padX,y:2,width:bfW-2*padX,height:16,rx:3,
+    fill:'rgba(0,0,0,0.25)',stroke:phClr,'stroke-width':'0.5',opacity:'0.6'}));
+  g.appendChild(svgText('PHASE: '+step.phase,{x:bfW/2,y:13,'text-anchor':'middle',
+    'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:phClr,'font-weight':'700'}));
+
+  /* column header labels */
+  var colLabels = ['Input'];
+  for (var ci=1;ci<=lv;ci++) colLabels.push('FFT L'+ci);
+  colLabels.push('PW×');
+  for (var ci2=1;ci2<=lv;ci2++) colLabels.push('IFFT L'+ci2);
+  colLabels.push('Output');
+
+  colLabels.forEach(function(lbl,ci) {
+    var isPW = lbl === 'PW×';
+    var isOut = lbl === 'Output';
+    var lClr = isPW ? '#8b5cf6' : isOut ? '#10d9a0' : '#3d5a7a';
+    if (ci === activeCol) lClr = phClr;
+    g.appendChild(svgText(lbl,{x:padX+ci*colW,y:25,'text-anchor':'middle',
+      'font-size':'8','font-family':'IBM Plex Mono,monospace',fill:lClr,
+      'font-weight': ci===activeCol ? '700' : '400'}));
+  });
+
+  /* draw wires between adjacent columns */
+  for (var col=0; col<totalCols-1; col++) {
+    var isDoneW = col < activeCol;
+    var isActW  = col === activeCol - 1;
+    /* choose block structure based on which segment we're in */
+    var bsz, hsz;
+    if (col < lv) {                   /* FFT segment */
+      bsz = 2 << col; hsz = bsz >> 1;
+    } else if (col === lv) {          /* FFT-last → Pointwise: full bars */
+      bsz = displayN; hsz = 0;
+    } else if (col === lv+1) {        /* Pointwise → IFFT first: full bars */
+      bsz = displayN; hsz = 0;
+    } else {                          /* IFFT segment */
+      var ifftLv = col - (lv+2);
+      bsz = 2 << ifftLv; hsz = bsz >> 1;
+    }
+
+    var wc = isActW ? phClr    : isDoneW ? 'rgba(16,217,160,0.5)' : '#1f2e50';
+    var cc = isActW ? '#f0803c': isDoneW ? 'rgba(16,217,160,0.5)' : '#1f2e50';
+    var ww = isActW ? 2 : 1.5;
+    var wo = isActW ? 1 : isDoneW ? 0.55 : 0.2;
+
+    if (hsz === 0) {
+      /* straight wires — pointwise transition columns */
+      for (var row=0; row<displayN; row++) {
+        var pa=np(col,row), pb=np(col+1,row);
+        g.appendChild(svgEl('line',{x1:pa.x,y1:pa.y,x2:pb.x,y2:pb.y,
+          stroke: isActW ? '#8b5cf6' : wc,'stroke-width':ww,opacity:wo,
+          'stroke-dasharray': isActW ? '6,3' : 'none'}));
+      }
+    } else {
+      /* butterfly wires */
+      for (var row=0; row<displayN; row+=bsz) {
+        for (var k=0; k<hsz && row+k+hsz<displayN; k++) {
+          var t=np(col,row+k),tr=np(col+1,row+k),b=np(col,row+k+hsz),br=np(col+1,row+k+hsz);
+          g.appendChild(svgEl('line',{x1:t.x,y1:t.y,x2:tr.x,y2:tr.y,stroke:wc,'stroke-width':ww,opacity:wo}));
+          g.appendChild(svgEl('line',{x1:b.x,y1:b.y,x2:tr.x,y2:tr.y,stroke:cc,'stroke-width':ww,opacity:wo,
+            'stroke-dasharray':isActW?'5,3':'none'}));
+          g.appendChild(svgEl('line',{x1:b.x,y1:b.y,x2:br.x,y2:br.y,stroke:wc,'stroke-width':ww,opacity:wo}));
+          if (isActW && k===0) g.appendChild(svgText('ω^k',{x:(b.x+tr.x)/2+3,y:(b.y+tr.y)/2-3,
+            'font-size':'7','font-family':'IBM Plex Mono,monospace',fill:'#f0803c',opacity:'0.9'}));
+        }
+      }
+    }
+  }
+
+  /* draw nodes */
+  for (var c2=0; c2<totalCols; c2++) {
+    var isFFTseg  = c2 > 0 && c2 <= lv;
+    var isPWcol   = c2 === lv+1;
+    var isIFFTseg = c2 > lv+1 && c2 < totalCols-1;
+    var isOutCol  = c2 === totalCols-1;
+    var isInCol   = c2 === 0;
+
+    for (var r2=0; r2<displayN; r2++) {
+      var p = np(c2, r2);
+      var actC  = c2 === activeCol;
+      var doneC = c2 <  activeCol;
+
+      var f2, s2;
+      if (isInCol) {
+        f2 = r2<displayN/2 ? 'rgba(61,169,252,.15)' : 'rgba(255,140,66,.15)';
+        s2 = r2<displayN/2 ? '#3da9fc' : '#f0803c';
+      } else if (isOutCol && step.subPhase==='result') {
+        f2='rgba(16,217,160,.22)'; s2='#10d9a0';
+      } else if (isPWcol && actC) {
+        f2='rgba(139,92,246,.22)'; s2='#8b5cf6';
+      } else if (isPWcol && doneC) {
+        f2='rgba(139,92,246,.1)'; s2='#8b5cf6';
+      } else if (isIFFTseg && actC) {
+        f2='rgba(16,217,160,.2)'; s2='#10d9a0';
+      } else if (actC) {
+        f2='rgba(246,185,59,.2)'; s2='#f6b93b';
+      } else if (doneC) {
+        f2='rgba(16,217,160,.08)'; s2='rgba(16,217,160,0.5)';
+      } else {
+        f2='var(--bg3)'; s2='#263d60';
+      }
+
+      var circ = svgEl('circle',{cx:p.x,cy:p.y,r:nodeR,fill:f2,stroke:s2,'stroke-width':'1.5'});
+      circ.classList.add('viz-node');
+      g.appendChild(circ);
+
+      /* input coefficient labels */
+      if (isInCol && nodeR>=7) {
+        var hn=Math.floor(displayN/2);
+        var v = r2<hn ? (p2State.polyA[r2]||0) : (p2State.polyB[r2-hn]||0);
+        g.appendChild(svgText(String(v),{x:p.x,y:p.y+3.5,'text-anchor':'middle',
+          'font-size':'8','font-family':'IBM Plex Mono,monospace',
+          fill:r2<hn?'#3da9fc':'#f0803c','font-weight':'700'}));
+      }
+
+      /* pointwise column: show A×B label on active */
+      if (isPWcol && actC && nodeR>=7 && step.evalC && step.evalC[r2]) {
+        var short = step.evalC[r2].length > 8 ? step.evalC[r2].slice(0,7)+'…' : step.evalC[r2];
+        g.appendChild(svgText(short,{x:p.x,y:p.y+3.5,'text-anchor':'middle',
+          'font-size':'7','font-family':'IBM Plex Mono,monospace',fill:'#8b5cf6','font-weight':'700'}));
+      }
+
+      /* output result labels */
+      if (isOutCol && step.subPhase==='result' && p2State.fftResult[r2]!==undefined && nodeR>=7) {
+        var rv = Math.round(p2State.fftResult[r2]*100)/100;
+        g.appendChild(svgText(String(rv),{x:p.x,y:p.y+3.5,'text-anchor':'middle',
+          'font-size':'8','font-family':'IBM Plex Mono,monospace',fill:'#10d9a0','font-weight':'700'}));
+      }
+    }
+  }
+
+  /* segment divider lines and labels */
+  var pwX = np(lv+1,0).x;
+  g.appendChild(svgEl('line',{x1:pwX,y1:28,x2:pwX,y2:H-8,stroke:'rgba(139,92,246,0.25)','stroke-width':'1','stroke-dasharray':'4,4'}));
+
+  /* A/B side labels */
+  g.appendChild(svgText('A',{x:padX-8,y:padY-4,'font-size':'11',fill:'#3da9fc','font-family':'IBM Plex Mono,monospace','font-weight':'700'}));
+  g.appendChild(svgText('B',{x:padX-8,y:padY+Math.floor(displayN/2)*rowH+6,'font-size':'11',fill:'#f0803c','font-family':'IBM Plex Mono,monospace','font-weight':'700'}));
+
+  /* divider between butterfly and circle areas */
+  g.appendChild(svgEl('line',{x1:bfW+2,y1:0,x2:bfW+2,y2:H,stroke:'#1f2e50','stroke-width':'1'}));
+
+  /* ===================== UNIT CIRCLE ===================== */
+  var showN = Math.min(N, 16);
+
+  /* title shows ω_N and direction for IFFT */
+  var circTitle = step.subPhase === 'ifft'
+    ? 'Roots of Unity  ω̄_'+N+'  (conjugate for IFFT)'
+    : 'Roots of Unity  ω_'+N;
+  g.appendChild(svgText(circTitle,{x:ucCX,y:ucCY-ucR-14,'text-anchor':'middle','font-size':'10',
+    'font-family':'IBM Plex Mono,monospace',fill: step.subPhase==='ifft' ? '#10d9a0' : '#6a8aaa','font-weight':'700'}));
+
+  /* axes */
+  g.appendChild(svgEl('line',{x1:ucCX-ucR-6,y1:ucCY,x2:ucCX+ucR+6,y2:ucCY,stroke:'#1f2e50','stroke-width':'1'}));
+  g.appendChild(svgEl('line',{x1:ucCX,y1:ucCY-ucR-6,x2:ucCX,y2:ucCY+ucR+6,stroke:'#1f2e50','stroke-width':'1'}));
+  g.appendChild(svgEl('circle',{cx:ucCX,cy:ucCY,r:ucR,fill:'none',stroke:'#1f3055','stroke-width':'1.5'}));
+
+  /* roots — for IFFT rotate clockwise (conjugate) */
+  for (var ri=0; ri<showN; ri++) {
+    var isIfft = step.subPhase === 'ifft';
+    /* normal: counter-clockwise; IFFT: clockwise (conjugate) */
+    var ang = -Math.PI/2 + 2*Math.PI*ri/showN * (isIfft ? -1 : 1);
+    var rx2=ucCX+ucR*Math.cos(ang), ry3=ucCY+ucR*Math.sin(ang);
+    var isRoot=false;
+    if (step.rootsUsed) step.rootsUsed.forEach(function(ru){if(ru===ri)isRoot=true;});
+    g.appendChild(svgEl('line',{x1:ucCX,y1:ucCY,x2:rx2,y2:ry3,
+      stroke:isRoot?'rgba(246,185,59,.4)':'rgba(38,61,96,.5)','stroke-width':isRoot?'1.5':'1'}));
+    g.appendChild(svgEl('circle',{cx:rx2,cy:ry3,r:isRoot?5:3,
+      fill:isRoot?'#f6b93b':'#141e35',stroke:isRoot?'#f6b93b':'#1f3055','stroke-width':'1.5'}));
+    var lx2=ucCX+(ucR+11)*Math.cos(ang), ly2=ucCY+(ucR+11)*Math.sin(ang)+3;
+    g.appendChild(svgText('ω^'+ri,{x:lx2,y:ly2,'text-anchor':'middle','font-size':'8',
+      'font-family':'IBM Plex Mono,monospace',fill:isRoot?'#f6b93b':'#3d5a7a'}));
+  }
+
+  /* cancellation line */
+  if (step.rootsUsed && step.rootsUsed.length && step.half) {
+    var k0=step.rootsUsed[0], kOp=(k0+showN/2)%showN;
+    var isIfft2 = step.subPhase==='ifft';
+    var a0=-Math.PI/2+2*Math.PI*k0/showN*(isIfft2?-1:1);
+    var aOp=-Math.PI/2+2*Math.PI*kOp/showN*(isIfft2?-1:1);
+    var x0c=ucCX+ucR*Math.cos(a0), y0c=ucCY+ucR*Math.sin(a0);
+    var xkc=ucCX+ucR*Math.cos(aOp), ykc=ucCY+ucR*Math.sin(aOp);
+    g.appendChild(svgEl('line',{x1:x0c,y1:y0c,x2:xkc,y2:ykc,stroke:'#f0504a','stroke-width':'1.5','stroke-dasharray':'4,3',opacity:'0.75'}));
+    g.appendChild(svgText('-1×',{x:(x0c+xkc)/2+4,y:(y0c+ykc)/2-4,'font-size':'12','font-family':'IBM Plex Mono,monospace',fill:'#f0504a','font-weight':'700'}));
+  }
+
+  /* axis labels */
+  g.appendChild(svgText('+1',{x:ucCX+ucR+10,y:ucCY+4,'font-size':'9',fill:'#4a6890','font-family':'IBM Plex Mono,monospace'}));
+  g.appendChild(svgText('-1',{x:ucCX-ucR-18,y:ucCY+4,'font-size':'9',fill:'#4a6890','font-family':'IBM Plex Mono,monospace'}));
+  g.appendChild(svgText('+i',{x:ucCX+4,y:ucCY-ucR-5,'font-size':'9',fill:'#4a6890','font-family':'IBM Plex Mono,monospace'}));
+  g.appendChild(svgText('-i',{x:ucCX+4,y:ucCY+ucR+13,'font-size':'9',fill:'#4a6890','font-family':'IBM Plex Mono,monospace'}));
+
+  /* property annotations */
+  var ay = ucCY + ucR + 20;
+  g.appendChild(svgText('Cancellation: ω^(k+n/2) = −ω^k',{x:ucCX,y:ay,'text-anchor':'middle',
+    'font-size':'11','font-family':'IBM Plex Mono,monospace',fill:'#f0504a','font-weight':'700'}));
+  g.appendChild(svgText('Halving: (ω_n^k)² = ω_{n/2}^k',{x:ucCX,y:ay+16,'text-anchor':'middle',
+    'font-size':'11','font-family':'IBM Plex Mono,monospace',fill:'#8b5cf6','font-weight':'700'}));
+
+  /* IFFT note */
+  if (step.subPhase === 'ifft') {
+    g.appendChild(svgEl('rect',{x:ucCX-100,y:ay+24,width:200,height:16,rx:3,fill:'rgba(16,217,160,.08)',stroke:'#10d9a0','stroke-width':'1'}));
+    g.appendChild(svgText('IFFT: conjugate ω̄ + divide by n',{x:ucCX,y:ay+35,'text-anchor':'middle',
+      'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#10d9a0','font-weight':'700'}));
+  }
+
+  /* pointwise note */
+  if (step.subPhase === 'pointwise') {
+    g.appendChild(svgEl('rect',{x:ucCX-100,y:ay+24,width:200,height:16,rx:3,fill:'rgba(139,92,246,.1)',stroke:'#8b5cf6','stroke-width':'1'}));
+    g.appendChild(svgText('C[k] = A_eval[k] × B_eval[k]',{x:ucCX,y:ay+35,'text-anchor':'middle',
+      'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#8b5cf6','font-weight':'700'}));
+  }
+
+  /* result comparison */
+  if (step.subPhase === 'result') {
+    var cy3 = ay + 40;
+    g.appendChild(svgText('Naive O(n²): '+p2State.naiveOps+' ops',{x:ucCX,y:cy3,'text-anchor':'middle','font-size':'11','font-family':'IBM Plex Mono,monospace',fill:'#f0504a','font-weight':'700'}));
+    g.appendChild(svgText('FFT O(n log n): ~'+p2State.fftOps+' ops',{x:ucCX,y:cy3+15,'text-anchor':'middle','font-size':'11','font-family':'IBM Plex Mono,monospace',fill:'#10d9a0','font-weight':'700'}));
+    g.appendChild(svgText('Results match ✓',{x:ucCX,y:cy3+32,'text-anchor':'middle','font-size':'12','font-family':'IBM Plex Mono,monospace',fill:'#f6b93b','font-weight':'700'}));
+  }
+}
+
+
+function p2_applyStep(idx) {
+  if (idx < 0 || idx >= p2State.steps.length) return;
+  var step = p2State.steps[idx];
+
+  p2_draw(idx);
+  highlightPC('part-1', step.pcLine);
+  setCounter('p2-counter', idx + 1, p2State.steps.length);
+  document.getElementById('p2-explanation').textContent = step.expl;
+
+  document.getElementById('p2-stat-mult').textContent  = step.mults;
+  document.getElementById('p2-stat-adds').textContent  = step.adds;
+  document.getElementById('p2-stat-phase').textContent = step.phase;
+
+  if (step.phase === 'Result') {
+    setStatus('p2-badge', 'done');
+  } else {
+    setStatus('p2-badge', 'playing');
+  }
+
+  addHistoryRow('p2-history',
+    [idx + 1, step.phase, step.detail, step.mults + step.adds],
+    true, idx
+  );
+}
+
+/* ---------- jump to step (history click) ---------- */
+function p2_jumpTo(idx) {
+  if (idx < 0 || idx >= p2State.steps.length) return;
+  p2State.idx = idx;
+  clearHistory('p2-history');
+  for (var i = 0; i <= idx; i++) {
+    var s = p2State.steps[i];
+    addHistoryRow('p2-history',
+      [i + 1, s.phase, s.detail, s.mults + s.adds],
+      i === idx, i
+    );
+  }
+  p2_draw(idx);
+  highlightPC('part-1', p2State.steps[idx].pcLine);
+  setCounter('p2-counter', idx + 1, p2State.steps.length);
+  document.getElementById('p2-explanation').textContent = p2State.steps[idx].expl;
+  document.getElementById('p2-stat-mult').textContent  = p2State.steps[idx].mults;
+  document.getElementById('p2-stat-adds').textContent  = p2State.steps[idx].adds;
+  document.getElementById('p2-stat-phase').textContent = p2State.steps[idx].phase;
+  setStatus('p2-badge', p2State.steps[idx].phase === 'Result' ? 'done' : 'paused');
+}
+
+/* ---------- public controls ---------- */
+function p2_build() {
+  p2_reset();
+  hidePlaceholder('p2-placeholder');
+
+  var rawA = p2_parsePoly(document.getElementById('p2-poly-a').value);
+  var rawB = p2_parsePoly(document.getElementById('p2-poly-b').value);
+  if (!rawA.length || !rawB.length) { alert('Enter valid polynomial coefficients.'); return; }
+
+  var computed = p2_computeSteps(rawA, rawB);
+  p2State.steps       = computed.steps;
+  p2State.polyA       = rawA;
+  p2State.polyB       = rawB;
+  p2State.N           = computed.N;
+  p2State.levels      = computed.levels;
+  p2State.naiveResult = computed.naiveResult;
+  p2State.fftResult   = computed.fftResult;
+  p2State.naiveOps    = computed.naiveOps;
+  p2State.fftOps      = computed.fftOps;
+
+  /* update complexity comparison panel */
+  document.getElementById('p2-stat-naive').textContent = computed.naiveOps;
+  document.getElementById('p2-naive-ops').textContent  = computed.naiveOps + ' ops';
+  document.getElementById('p2-fft-ops').textContent    = '~' + computed.fftOps + ' ops';
+
+  registerJump('p2-history', p2_jumpTo);
+
+  p2_draw(0);
+  p2State.idx = 0;
+  setCounter('p2-counter', 1, computed.steps.length);
+  document.getElementById('p2-explanation').textContent = computed.steps[0].expl;
+  document.getElementById('p2-stat-phase').textContent  = computed.steps[0].phase;
+  highlightPC('part-1', computed.steps[0].pcLine);
+  addHistoryRow('p2-history',
+    [1, computed.steps[0].phase, computed.steps[0].detail, 0],
+    true, 0
+  );
+  setStatus('p2-badge', 'ready');
+}
+
+function p2_step() {
+  if (!p2State.steps.length) return;
+  if (p2State.idx >= p2State.steps.length - 1) return;
+  p2State.idx++;
+  p2_applyStep(p2State.idx);
+}
+
+function p2_play() {
+  if (!p2State.steps.length || p2State.playing) return;
+  if (p2State.idx >= p2State.steps.length - 1) p2State.idx = -1;
+  p2State.playing = true;
+  setStatus('p2-badge', 'playing');
+  function tick() {
+    if (!p2State.playing) return;
+    if (p2State.idx >= p2State.steps.length - 1) {
+      p2State.playing = false;
+      setStatus('p2-badge', 'done');
+      return;
+    }
+    p2State.idx++;
+    p2_applyStep(p2State.idx);
+    var spd = parseFloat(document.getElementById('p2-speed').value) || 1;
+    p2State.timer = setTimeout(tick, Math.round(750 / spd));
+  }
+  tick();
+}
+
+function p2_pause() {
+  p2State.playing = false;
+  clearTimeout(p2State.timer);
+  if (p2State.idx < p2State.steps.length - 1) setStatus('p2-badge', 'paused');
+}
+
+function p2_reset() {
+  p2State.playing = false;
+  clearTimeout(p2State.timer);
+  p2State.steps = []; p2State.idx = -1;
+  p2State.polyA = []; p2State.polyB = [];
+  p2State.N = 0; p2State.levels = 0;
+  p2State.naiveResult = []; p2State.fftResult = [];
+  setStatus('p2-badge', 'idle');
+  setCounter('p2-counter', 0, 0);
+  clearHistory('p2-history');
+  clearPC('part-1');
+  document.getElementById('p2-explanation').textContent = 'Enter two polynomials and press Build Steps.';
+  document.getElementById('p2-stat-mult').textContent  = '0';
+  document.getElementById('p2-stat-adds').textContent  = '0';
+  document.getElementById('p2-stat-naive').textContent = '—';
+  document.getElementById('p2-stat-phase').textContent = '—';
+  document.getElementById('p2-naive-ops').textContent  = '— ops';
+  document.getElementById('p2-fft-ops').textContent    = '— ops';
+  document.getElementById('p2-graph-layer').innerHTML  = '';
+  showPlaceholder('p2-placeholder');
+}
+
+/* ==================================================================
+   PART 3 — POLLARD'S RHO FACTORIZATION (Full Implementation)
+   ================================================================== */
+
+var P3_PRESETS = [
+  { n:77,   c:1, x0:2, label:'77 = 7 × 11'       },
+  { n:8051, c:1, x0:2, label:'8051 = 83 × 97'     },
+  { n:1387, c:1, x0:2, label:'1387 = 19 × 73'     },
+  { n:10403,c:1, x0:2, label:'10403 = 101 × 103'  }
+];
+
+var p3State = {
+  steps:[], idx:-1, playing:false, timer:null,
+  n:0, c:1, x0:2, factor:null, seqFull:[], cycleStart:-1
+};
+
+/* ---- helpers ---- */
+function p3_gcd(a, b) { a=Math.abs(a); b=Math.abs(b); while(b){var t=b;b=a%b;a=t;} return a; }
+function p3_f(x, c, n) { return ((x*x + c) % n + n) % n; }
+
+function p3_preset(i) {
+  document.getElementById('p3-n').value  = P3_PRESETS[i].n;
+  document.getElementById('p3-c').value  = P3_PRESETS[i].c;
+  document.getElementById('p3-x0').value = P3_PRESETS[i].x0;
+}
+
+/* ---- pre-compute the full sequence to find rho shape ---- */
+function p3_buildSequence(n, c, x0) {
+  /* Generate sequence values mod n until we detect a cycle (Floyd on full sequence) */
+  var seq = [x0];
+  var seen = {}, cycleStart = -1;
+  seen[x0] = 0;
+  var MAX = Math.min(200, n);
+  var x = x0;
+  for (var i = 1; i < MAX; i++) {
+    x = p3_f(x, c, n);
+    if (seen[x] !== undefined) { cycleStart = seen[x]; break; }
+    seen[x] = i;
+    seq.push(x);
+  }
+  return { seq: seq, cycleStart: cycleStart >= 0 ? cycleStart : Math.floor(seq.length * 0.6) };
+}
+
+/* ---- compute all algorithm steps ---- */
+function p3_computeSteps(n, c, x0) {
+  var steps = [];
+  var seqInfo = p3_buildSequence(n, c, x0);
+  var seqFull = seqInfo.seq;
+  var cycleStart = seqInfo.cycleStart;
+
+  /* ── Step 0: initialise ── */
+  steps.push({
+    type:'init', pcLine:1,
+    tort:x0, hare:x0, d:1,
+    stepNum:0, gcdCount:0,
+    found:false, factor:null, failed:false,
+    visitedCount:1,
+    expl:'INIT: n='+n+', f(x) = (x²+'+c+') mod '+n+', x₀='+x0+
+         '.  Both tortoise and hare start at x₀='+x0+
+         '.  Expected steps: O(n^¼) = O('+Math.round(Math.pow(n,0.25))+'). '+
+         '  Birthday paradox: after ~√p values mod p (p = smallest prime), a collision is likely.'
+  });
+
+  /* ── Run Floyd's cycle detection ── */
+  var tort = x0, hare = x0;
+  var stepNum = 0, gcdCount = 0;
+  var found = false, factor = null, failed = false;
+
+  for (var iter = 0; iter < 300; iter++) {
+    /* advance pointers */
+    tort = p3_f(tort, c, n);
+    hare = p3_f(p3_f(hare, c, n), c, n);
+    stepNum++;
+    var diff = Math.abs(tort - hare);
+    var d = diff === 0 ? n : p3_gcd(diff, n);
+    gcdCount++;
+
+    var foundFactor = (d > 1 && d < n);
+    var failedNow   = (d === n);
+
+    steps.push({
+      type: foundFactor ? 'found' : failedNow ? 'fail' : 'step',
+      pcLine: foundFactor ? 8 : failedNow ? 7 : (iter === 0 ? 4 : 6),
+      tort: tort, hare: hare, d: d,
+      diff: diff,
+      stepNum: stepNum, gcdCount: gcdCount,
+      found: foundFactor, factor: foundFactor ? d : null, failed: failedNow,
+      visitedCount: Math.min(stepNum + 1, seqFull.length),
+      expl: foundFactor
+        ? 'FACTOR FOUND!  Tortoise = '+tort+',  Hare = '+hare+
+          '.  |'+tort+' − '+hare+'| = '+diff+'.  gcd('+diff+', '+n+') = '+d+' ≠ 1 and ≠ '+n+
+          '.  Non-trivial factor: '+d+' × '+(n/d)+' = '+n+' ✓'
+        : failedNow
+        ? 'FAILURE: gcd('+diff+', '+n+') = '+n+'.  The hare caught the tortoise mod n itself — cycle detected at wrong point.  Try a different c value.'
+        : 'Step '+stepNum+':  Tortoise x = f('+( (tort) )+')... → '+tort+
+          ',  Hare y = f(f(...)) → '+hare+
+          '.  |'+tort+' − '+hare+'| = '+diff+'.  gcd('+diff+', '+n+') = '+d+
+          (d === 1 ? ' = 1, no factor yet — continue.' : ' > 1!')
+    });
+
+    if (foundFactor || failedNow) { found = foundFactor; factor = foundFactor ? d : null; failed = failedNow; break; }
+  }
+
+  return { steps:steps, seqFull:seqFull, cycleStart:cycleStart, factor:factor };
+}
+
+/* ---- draw the rho graph ---- */
+function p3_draw(stepIdx) {
+  var g = document.getElementById('p3-graph-layer');
+  g.innerHTML = '';
+  if (!p3State.steps.length) return;
+
+  var svg = document.getElementById('p3-svg');
+  var W = svg.clientWidth  || 800;
+  var H = svg.clientHeight || 500;
+  var step = p3State.steps[Math.max(0, stepIdx)];
+  var seqFull   = p3State.seqFull;
+  var cycleStart = p3State.cycleStart;
+  var n = p3State.n;
+
+  var TORT_CLR  = '#3da9fc';
+  var HARE_CLR  = '#f6b93b';
+  var FOUND_CLR = '#10d9a0';
+  var VISIT_CLR = '#1f2e50';
+  var NODE_CLR  = '#141e35';
+
+  /* ---- layout: tail on left, cycle as circle on right ---- */
+  var tailLen   = Math.min(cycleStart, seqFull.length);
+  var cycleLen  = Math.max(0, seqFull.length - tailLen);
+  var displayTail  = Math.min(tailLen, 8);
+  var displayCycle = Math.min(cycleLen, 12);
+
+  var NODE_R    = 20;
+  var TAIL_PAD  = 54;
+  var TAIL_STEP = Math.min(90, (W * 0.40) / Math.max(1, displayTail));
+  var TAIL_Y    = Math.floor(H * 0.38);
+
+  /* cycle circle */
+  var cycX = TAIL_PAD + displayTail * TAIL_STEP + Math.min(120, W * 0.22);
+  var cycY = Math.floor(H * 0.42);
+  var cycR = Math.min(Math.floor(H * 0.28), displayCycle > 0 ? Math.max(55, displayCycle * 18) : 80);
+
+  /* clamp so cycle stays on screen */
+  if (cycX + cycR + 70 > W) {
+    cycX = W - cycR - 70;
+    TAIL_STEP = Math.min(TAIL_STEP, (cycX - TAIL_PAD - cycR * 0.6) / Math.max(1, displayTail));
+  }
+
+  /* node position helpers */
+  function tailPos(i) {
+    return { x: TAIL_PAD + i * TAIL_STEP, y: TAIL_Y };
+  }
+  function cyclePos(i) {
+    var ang = -Math.PI/2 + 2*Math.PI*i/Math.max(1, displayCycle);
+    return { x: cycX + cycR*Math.cos(ang), y: cycY + cycR*Math.sin(ang) };
+  }
+  function seqPos(seqIdx) {
+    if (seqIdx < displayTail) return tailPos(seqIdx);
+    var ci = seqIdx - tailLen;
+    if (ci < displayCycle) return cyclePos(ci);
+    return null;
+  }
+
+  /* which nodes are "visited" up to current step */
+  var visitedUp = Math.min(step.visitedCount, seqFull.length);
+
+  /* ---- helper: draw arrow between two positions ---- */
+  function drawArrow(p1, p2, clr, sw, dash, marker) {
+    if (!p1 || !p2) return;
+    var dx=p2.x-p1.x, dy=p2.y-p1.y, len=Math.sqrt(dx*dx+dy*dy)||1;
+    var ux=dx/len, uy=dy/len;
+    /* shorten so arrow stops at node edge */
+    var x1=p1.x+ux*NODE_R, y1=p1.y+uy*NODE_R;
+    var x2=p2.x-ux*(NODE_R+6), y2=p2.y-uy*(NODE_R+6);
+    var el = svgEl('line',{x1:x1,y1:y1,x2:x2,y2:y2,
+      stroke:clr,'stroke-width':sw||1.5,
+      'stroke-dasharray':dash||'none',
+      'marker-end':marker||'url(#arr-seq)'});
+    g.appendChild(el);
+  }
+
+  /* ---- draw tail edges ---- */
+  for (var i = 0; i < displayTail - 1; i++) {
+    var visited = i + 1 <= visitedUp;
+    var clr = visited ? '#2a4060' : '#1f2e50';
+    drawArrow(tailPos(i), tailPos(i+1), clr, visited ? 2 : 1, 'none', 'url(#arr-seq)');
+  }
+
+  /* tail → cycle connector */
+  if (displayTail > 0 && displayCycle > 0) {
+    var lastTailPos = tailPos(displayTail - 1);
+    var firstCycPos = cyclePos(0);
+    drawArrow(lastTailPos, firstCycPos, '#2a4060', 2, '5,3', 'url(#arr-seq)');
+  }
+
+  /* ---- draw cycle edges ---- */
+  for (var ci = 0; ci < displayCycle; ci++) {
+    var nextCi = (ci + 1) % displayCycle;
+    var p1c = cyclePos(ci), p2c = cyclePos(nextCi);
+    var visitedC = (tailLen + ci) < visitedUp;
+    drawArrow(p1c, p2c, visitedC ? '#2a4060' : '#1f2e50', visitedC ? 2 : 1, 'none', 'url(#arr-seq)');
+  }
+
+  /* ---- draw tail nodes ---- */
+  for (var ti = 0; ti < displayTail; ti++) {
+    var pos = tailPos(ti);
+    var val = seqFull[ti];
+    var isTort = (val === step.tort && ti > 0);
+    var isHare = (val === step.hare && ti > 0);
+    var isFound = step.found && (isTort || isHare);
+    var visited2 = ti < visitedUp;
+
+    /* pick color */
+    var fill, stroke2, glow = false;
+    if (isFound) { fill='rgba(16,217,160,.25)'; stroke2=FOUND_CLR; glow=true; }
+    else if (isTort && isHare) { fill='rgba(139,92,246,.25)'; stroke2='#8b5cf6'; glow=true; }
+    else if (isTort) { fill='rgba(61,169,252,.2)'; stroke2=TORT_CLR; glow=true; }
+    else if (isHare) { fill='rgba(246,185,59,.2)'; stroke2=HARE_CLR; glow=true; }
+    else if (visited2) { fill='rgba(40,60,96,.65)'; stroke2=VISIT_CLR; }
+    else { fill=NODE_CLR; stroke2='#1f2e50'; }
+
+    var circle = svgEl('circle',{cx:pos.x,cy:pos.y,r:NODE_R,fill:fill,stroke:stroke2,'stroke-width':'2'});
+    circle.classList.add('viz-node');
+    if (glow) circle.classList.add('anim-glow');
+    g.appendChild(circle);
+
+    /* value label */
+    g.appendChild(svgText(String(val),{x:pos.x,y:pos.y+4,'text-anchor':'middle',
+      'font-size':'11','font-family':'IBM Plex Mono,monospace',
+      fill: isTort||isHare||isFound ? '#fff' : visited2 ? '#7a9bbf' : '#3d5a7a',
+      'font-weight':isTort||isHare?'700':'400'}));
+
+    /* x_i index label below */
+    g.appendChild(svgText('x'+ti,{x:pos.x,y:pos.y+NODE_R+13,'text-anchor':'middle',
+      'font-size':'8','font-family':'IBM Plex Mono,monospace',fill:'#4a6890'}));
+
+    /* pointer emoji labels above */
+    if (isTort && !isHare) {
+      g.appendChild(svgText('🐢',{x:pos.x,y:pos.y-NODE_R-6,'text-anchor':'middle','font-size':'15'}));
+    }
+    if (isHare && !isTort) {
+      g.appendChild(svgText('🐇',{x:pos.x,y:pos.y-NODE_R-6,'text-anchor':'middle','font-size':'15'}));
+    }
+    if (isTort && isHare) {
+      g.appendChild(svgText('🐢🐇',{x:pos.x,y:pos.y-NODE_R-6,'text-anchor':'middle','font-size':'13'}));
+    }
+  }
+
+  /* ---- draw cycle nodes ---- */
+  for (var cci = 0; cci < displayCycle; cci++) {
+    var seqI = tailLen + cci;
+    var posc = cyclePos(cci);
+    var valc = seqFull[seqI];
+    if (valc === undefined) continue;
+
+    var isTortC = (valc === step.tort && seqI > 0);
+    var isHareC = (valc === step.hare && seqI > 0);
+    var isFoundC = step.found && (isTortC || isHareC);
+    var visitedCC = seqI < visitedUp;
+
+    var fillc, strokec, glowc=false;
+    if (isFoundC) { fillc='rgba(16,217,160,.25)'; strokec=FOUND_CLR; glowc=true; }
+    else if (isTortC && isHareC) { fillc='rgba(139,92,246,.25)'; strokec='#8b5cf6'; glowc=true; }
+    else if (isTortC) { fillc='rgba(61,169,252,.2)'; strokec=TORT_CLR; glowc=true; }
+    else if (isHareC) { fillc='rgba(246,185,59,.2)'; strokec=HARE_CLR; glowc=true; }
+    else if (visitedCC) { fillc='rgba(246,185,59,.1)'; strokec='#f6b93b'; }
+    else { fillc=NODE_CLR; strokec='#1f2e50'; }
+
+    var circc = svgEl('circle',{cx:posc.x,cy:posc.y,r:NODE_R,fill:fillc,stroke:strokec,'stroke-width':'2'});
+    circc.classList.add('viz-node');
+    if (glowc) circc.classList.add('anim-glow');
+    g.appendChild(circc);
+
+    g.appendChild(svgText(String(valc),{x:posc.x,y:posc.y+4,'text-anchor':'middle',
+      'font-size':'11','font-family':'IBM Plex Mono,monospace',
+      fill: isTortC||isHareC||isFoundC ? '#fff' : visitedCC ? '#7a9bbf' : '#3d5a7a',
+      'font-weight':isTortC||isHareC?'700':'400'}));
+
+    /* small cycle index label */
+    var angL = -Math.PI/2 + 2*Math.PI*cci/Math.max(1,displayCycle);
+    var lx = cycX+(cycR+16)*Math.cos(angL), ly=cycY+(cycR+16)*Math.sin(angL)+4;
+    g.appendChild(svgText('x'+(seqI),{x:lx,y:ly,'text-anchor':'middle',
+      'font-size':'8','font-family':'IBM Plex Mono,monospace',fill:'#4a6890'}));
+
+    /* pointer labels */
+    if (isTortC && !isHareC) g.appendChild(svgText('🐢',{x:posc.x,y:posc.y-NODE_R-6,'text-anchor':'middle','font-size':'15'}));
+    if (isHareC && !isTortC) g.appendChild(svgText('🐇',{x:posc.x,y:posc.y-NODE_R-6,'text-anchor':'middle','font-size':'15'}));
+    if (isTortC && isHareC)  g.appendChild(svgText('🐢🐇',{x:posc.x,y:posc.y-NODE_R-6,'text-anchor':'middle','font-size':'13'}));
+  }
+
+  /* ---- rho shape labels ---- */
+  if (displayTail > 0) {
+    g.appendChild(svgText('← tail',{x:TAIL_PAD+displayTail*TAIL_STEP/2,y:TAIL_Y-NODE_R-18,
+      'text-anchor':'middle','font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#4a6890'}));
+  }
+  if (displayCycle > 0) {
+    g.appendChild(svgText('cycle →',{x:cycX,y:cycY-cycR-18,'text-anchor':'middle',
+      'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#f6b93b'}));
+  }
+
+  /* ---- GCD display panel (bottom centre) ---- */
+  var panY = H - 90;
+  var panX = W / 2;
+  var gcdStr = step.d !== undefined ? String(step.d) : '—';
+  var gcdClr = step.found ? FOUND_CLR : step.d > 1 ? '#f0504a' : '#7a9bbf';
+
+  g.appendChild(svgEl('rect',{x:panX-170,y:panY-4,width:340,height:76,rx:6,
+    fill:'rgba(11,15,26,.88)',stroke: step.found ? FOUND_CLR : '#1f2e50','stroke-width': step.found ? '2' : '1'}));
+
+  /* GCD formula */
+  var diffStr = step.diff !== undefined ? String(step.diff) : '—';
+  g.appendChild(svgText('gcd( |'+step.tort+' − '+step.hare+'| , '+n+' )',{
+    x:panX, y:panY+14,'text-anchor':'middle',
+    'font-size':'12','font-family':'IBM Plex Mono,monospace',fill:'#6a8aaa'}));
+  g.appendChild(svgText('= gcd( '+diffStr+' , '+n+' )  =  '+gcdStr,{
+    x:panX, y:panY+32,'text-anchor':'middle',
+    'font-size':'14','font-family':'IBM Plex Mono,monospace',fill:gcdClr,'font-weight':'700'}));
+
+  /* result verdict */
+  var verdict = step.found
+    ? '✓  Factor found: '+step.factor+' × '+(n/step.factor)+' = '+n
+    : step.failed
+    ? '✗  gcd = n — algorithm failed, retry with new c'
+    : step.d === 1 ? 'gcd = 1  →  no factor yet, continue' : 'gcd > 1 — checking...';
+  g.appendChild(svgText(verdict,{x:panX,y:panY+54,'text-anchor':'middle',
+    'font-size':'12','font-family':'IBM Plex Mono,monospace',
+    fill: step.found ? FOUND_CLR : step.failed ? '#f0504a' : '#8da3c4','font-weight': step.found ? '700' : '400'}));
+
+  /* ---- Birthday paradox annotation (top right) ---- */
+  var bpX = W - 10, bpY = 12;
+  var p_approx = p3State.factor || Math.round(Math.sqrt(n));
+  var sqrtP = Math.round(Math.sqrt(p_approx));
+  g.appendChild(svgEl('rect',{x:bpX-195,y:bpY,width:195,height:68,rx:5,
+    fill:'rgba(11,15,26,.85)',stroke:'#1f3055','stroke-width':'1'}));
+  g.appendChild(svgText('Birthday Paradox',{x:bpX-97,y:bpY+14,'text-anchor':'middle',
+    'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#8b5cf6','font-weight':'700'}));
+  g.appendChild(svgText('After ~√p ≈ '+sqrtP+' values mod p,',{x:bpX-97,y:bpY+29,'text-anchor':'middle',
+    'font-size':'9','font-family':'IBM Plex Mono,monospace',fill:'#6a8aaa'}));
+  g.appendChild(svgText('collision probability > 50%.',{x:bpX-97,y:bpY+43,'text-anchor':'middle',
+    'font-size':'9','font-family':'IBM Plex Mono,monospace',fill:'#6a8aaa'}));
+  g.appendChild(svgText('Expected steps: O(n^¼) = O('+Math.round(Math.pow(n,0.25))+')',{x:bpX-97,y:bpY+57,'text-anchor':'middle',
+    'font-size':'9','font-family':'IBM Plex Mono,monospace',fill:'#f6b93b','font-weight':'700'}));
+
+  /* ---- step info top left ---- */
+  g.appendChild(svgText('n = '+n+'   c = '+p3State.c+'   x₀ = '+p3State.x0,{
+    x:10, y:16,'text-anchor':'start',
+    'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#4a6890'}));
+  g.appendChild(svgText('f(x) = (x² + '+p3State.c+') mod '+n,{
+    x:10, y:30,'text-anchor':'start',
+    'font-size':'10','font-family':'IBM Plex Mono,monospace',fill:'#4a6890'}));
+
+  /* ---- factor banner when found ---- */
+  if (step.found && step.factor) {
+    var bw = 260, bh = 40;
+    var bfx = (W - bw)/2, bfy = 44;
+    g.appendChild(svgEl('rect',{x:bfx,y:bfy,width:bw,height:bh,rx:6,
+      fill:'rgba(16,217,160,.15)',stroke:FOUND_CLR,'stroke-width':'2'}));
+    g.appendChild(svgText('FACTOR: '+step.factor+' × '+(n/step.factor)+' = '+n,{
+      x:W/2,y:bfy+25,'text-anchor':'middle',
+      'font-size':'16','font-family':'IBM Plex Mono,monospace',fill:FOUND_CLR,'font-weight':'700'}));
+  }
+}
+
+/* ---- apply one step to the UI ---- */
+function p3_applyStep(idx) {
+  if (idx < 0 || idx >= p3State.steps.length) return;
+  var step = p3State.steps[idx];
+
+  p3_draw(idx);
+  highlightPC('part-2', step.pcLine);
+  setCounter('p3-counter', idx+1, p3State.steps.length);
+  document.getElementById('p3-explanation').textContent = step.expl;
+
+  /* pointer state panel */
+  document.getElementById('p3-tort-val').textContent = step.tort !== undefined ? step.tort : '—';
+  document.getElementById('p3-hare-val').textContent = step.hare !== undefined ? step.hare : '—';
+  var gcdEl = document.getElementById('p3-gcd-val');
+  gcdEl.textContent = step.d !== undefined ? step.d : '—';
+  gcdEl.style.color = step.found ? 'var(--found)' : step.d > 1 ? 'var(--red)' : 'var(--txt)';
+
+  /* stats */
+  document.getElementById('p3-stat-steps').textContent  = step.stepNum || 0;
+  document.getElementById('p3-stat-gcds').textContent   = step.gcdCount || 0;
+  if (step.found && step.factor) {
+    document.getElementById('p3-stat-factor').textContent = step.factor;
+    document.getElementById('p3-stat-factor').style.color = 'var(--found)';
+  }
+
+  if (step.found || step.failed) setStatus('p3-badge', 'done');
+  else setStatus('p3-badge', 'playing');
+
+  addHistoryRow('p3-history',
+    [idx+1, step.tort, step.hare, step.d !== undefined ? step.d : '—'],
+    true, idx
+  );
+}
+
+/* ---- jump to step (history click) ---- */
+function p3_jumpTo(idx) {
+  if (idx < 0 || idx >= p3State.steps.length) return;
+  p3State.idx = idx;
+  clearHistory('p3-history');
+  for (var i = 0; i <= idx; i++) {
+    var s = p3State.steps[i];
+    addHistoryRow('p3-history', [i+1, s.tort, s.hare, s.d !== undefined ? s.d : '—'], i===idx, i);
+  }
+  p3_draw(idx);
+  highlightPC('part-2', p3State.steps[idx].pcLine);
+  setCounter('p3-counter', idx+1, p3State.steps.length);
+  document.getElementById('p3-explanation').textContent = p3State.steps[idx].expl;
+  document.getElementById('p3-tort-val').textContent = p3State.steps[idx].tort;
+  document.getElementById('p3-hare-val').textContent = p3State.steps[idx].hare;
+  document.getElementById('p3-gcd-val').textContent  = p3State.steps[idx].d !== undefined ? p3State.steps[idx].d : '—';
+  setStatus('p3-badge', p3State.steps[idx].found || p3State.steps[idx].failed ? 'done' : 'paused');
+}
+
+/* ---- public controls ---- */
+function p3_build() {
+  p3_reset();
+  hidePlaceholder('p3-placeholder');
+
+  var n  = parseInt(document.getElementById('p3-n').value)  || 77;
+  var c  = parseInt(document.getElementById('p3-c').value)  || 1;
+  var x0 = parseInt(document.getElementById('p3-x0').value) || 2;
+
+  if (n < 4) { alert('n must be at least 4'); return; }
+
+  var computed = p3_computeSteps(n, c, x0);
+  p3State.steps      = computed.steps;
+  p3State.seqFull    = computed.seqFull;
+  p3State.cycleStart = computed.cycleStart;
+  p3State.factor     = computed.factor;
+  p3State.n = n; p3State.c = c; p3State.x0 = x0;
+
+  /* expected steps */
+  document.getElementById('p3-stat-expect').textContent = '~'+Math.round(Math.pow(n,0.25));
+
+  registerJump('p3-history', p3_jumpTo);
+
+  p3_draw(0);
+  p3State.idx = 0;
+  setCounter('p3-counter', 1, computed.steps.length);
+  document.getElementById('p3-explanation').textContent = computed.steps[0].expl;
+  document.getElementById('p3-tort-val').textContent = x0;
+  document.getElementById('p3-hare-val').textContent = x0;
+  document.getElementById('p3-gcd-val').textContent  = '1';
+  highlightPC('part-2', computed.steps[0].pcLine);
+  addHistoryRow('p3-history', [1, x0, x0, 1], true, 0);
+  setStatus('p3-badge', 'ready');
+}
+
+function p3_step() {
+  if (!p3State.steps.length) return;
+  if (p3State.idx >= p3State.steps.length - 1) return;
+  p3State.idx++;
+  p3_applyStep(p3State.idx);
+}
+
+function p3_play() {
+  if (!p3State.steps.length || p3State.playing) return;
+  if (p3State.idx >= p3State.steps.length - 1) p3State.idx = -1;
+  p3State.playing = true;
+  setStatus('p3-badge', 'playing');
+  function tick() {
+    if (!p3State.playing) return;
+    if (p3State.idx >= p3State.steps.length - 1) {
+      p3State.playing = false;
+      setStatus('p3-badge', 'done');
+      return;
+    }
+    p3State.idx++;
+    p3_applyStep(p3State.idx);
+    var spd = parseFloat(document.getElementById('p3-speed').value) || 1;
+    p3State.timer = setTimeout(tick, Math.round(700 / spd));
+  }
+  tick();
+}
+
+function p3_pause() {
+  p3State.playing = false;
+  clearTimeout(p3State.timer);
+  if (p3State.idx < p3State.steps.length - 1) setStatus('p3-badge', 'paused');
+}
+
+function p3_reset() {
+  p3State.playing = false;
+  clearTimeout(p3State.timer);
+  p3State.steps = []; p3State.idx = -1;
+  p3State.n=0; p3State.c=1; p3State.x0=2;
+  p3State.factor=null; p3State.seqFull=[]; p3State.cycleStart=-1;
+  setStatus('p3-badge', 'idle');
+  setCounter('p3-counter', 0, 0);
+  clearHistory('p3-history');
+  clearPC('part-2');
+  document.getElementById('p3-explanation').textContent  = 'Enter a composite number and press Build Steps.';
+  document.getElementById('p3-stat-steps').textContent   = '0';
+  document.getElementById('p3-stat-gcds').textContent    = '0';
+  document.getElementById('p3-stat-factor').textContent  = '—';
+  document.getElementById('p3-stat-factor').style.color  = '';
+  document.getElementById('p3-stat-expect').textContent  = '—';
+  document.getElementById('p3-tort-val').textContent     = '—';
+  document.getElementById('p3-hare-val').textContent     = '—';
+  document.getElementById('p3-gcd-val').textContent      = '—';
+  document.getElementById('p3-gcd-val').style.color      = '';
+  document.getElementById('p3-graph-layer').innerHTML    = '';
+  showPlaceholder('p3-placeholder');
+}
+
+</script>
+</div><!-- /content-area -->
+</div><!-- /app-shell -->
+</body>
+</html>
